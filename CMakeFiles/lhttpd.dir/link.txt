@@ -1,0 +1,2 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar cq liblhttpd.a  CMakeFiles/lhttpd.dir/src/httpclient.c.o CMakeFiles/lhttpd.dir/src/httpserver.c.o CMakeFiles/lhttpd.dir/src/httputil.c.o CMakeFiles/lhttpd.dir/src/util.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib liblhttpd.a

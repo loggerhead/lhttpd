@@ -1,0 +1,9 @@
+#ifndef CONFIG_H
+
+#cmakedefine APP_NAME "${NAME}"
+#cmakedefine APP_VERSION "${APP_VERSION}"
+#cmakedefine DEBUG ${DEBUG}
+#cmakedefine DEFAULT_PORT ${DEFAULT_PORT}
+
+#define CONFIG_H
+#endif
