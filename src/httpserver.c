@@ -66,8 +66,8 @@ static int on_body(http_parser *parser, const char *at, size_t len)
             stpncpy(tmp+client->readed_len, at, len);
             client->body = tmp;
         } else {
-            char ip[17];
-            l_warn("Can't alloc enough memory for %s", l_get_ip(client, ip));
+            l_reset_client(client);
+            l_warn("%s: can't alloc enough memory", __func__);
             return HPE_UNKNOWN;
         }
     }
@@ -88,11 +88,11 @@ static int on_message_complete(http_parser *parser)
     return 0;
 }
 
-static http_parser_settings *get_http_settings()
+static http_parser_settings *get_http_parser_settings()
 {
     static http_parser_settings *parser_settings = NULL;
 
-    if (!parser_settings) {
+    if (parser_settings == NULL) {
         parser_settings = l_calloc(1, sizeof(http_parser_settings));
 
         parser_settings->on_url = on_url;
@@ -105,21 +105,19 @@ static http_parser_settings *get_http_settings()
     return parser_settings;
 }
 
-static int do_http_parse(http_parser *parser, const char *at, size_t length)
+static int do_http_parse(client_t *client, const char *at, size_t len)
 {
-    size_t nparsed = http_parser_execute(parser, get_http_settings(), at, length);
+    size_t nparsed = http_parser_execute(&client->parser, get_http_parser_settings(), at, len);
 
-    if (nparsed != length) {
-        l_warn("%s: %s", __func__, http_errno_description(HTTP_PARSER_ERRNO(parser)));
+    if (nparsed != len) {
+        l_warn("%s: %s", __func__, http_errno_description(HTTP_PARSER_ERRNO(&client->parser)));
         return -1;
     }
     return 0;
 }
 
-// request data handler
 static const char *l_server_on_request(client_t *client)
 {
-    // TODO: add route and request support
     switch(client->parser.method) {
         case HTTP_GET:
         case HTTP_POST:
@@ -134,16 +132,14 @@ static const char *l_server_on_request(client_t *client)
 
 static const char *l_server_on_data(client_t *client, const char *buf, ssize_t nread)
 {
-    TRACE();
-
-    const char *errmsg = "";
+    const char *errmsg = NULL;
 
     server_t *server = client->server;
 
-    if (do_http_parse(&client->parser, buf, nread)) {
+    if (do_http_parse(client, buf, nread)) {
         errmsg = "parse HTTP request failed";
+        l_reset_client(client);
     } else if (client->is_message_complete) {
-        // TODO: BUG when called on_request_cb;
         if (server->on_request_cb)
             errmsg = server->on_request_cb(client);
 
@@ -157,19 +153,24 @@ static void l_server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv
 {
     client_t *client = client_handle->data;
     server_t *server = client->server;
-    const char *errmsg = "";
+    const char *errmsg = NULL;
 
+    // nread == 0 indicating that at this point there is nothing to be read.
     if (nread > 0) {
         if (server->on_data_cb)
             errmsg = server->on_data_cb(client, buf->base, nread);
     } else if (nread < 0) {
-        errmsg = (nread == UV_EOF)? "client closed" : "incorrect read";
+        if (nread != UV_EOF)
+            errmsg = "incorrect read";
     }
 
     L_FREE(buf->base);
 
+    // close connection if any error or other end closed
     if (l_has_error(errmsg)) {
         l_warn("%s: %s", __func__, errmsg);
+        uv_close((uv_handle_t *) &client->handle, l_server_on_close);
+    } else if (nread == UV_EOF) {
         uv_close((uv_handle_t *) &client->handle, l_server_on_close);
     }
 }
@@ -179,18 +180,22 @@ static void l_server_on_connect(uv_stream_t *server_handle, int status)
 {
     TRACE();
 
-    UV_CHECK(status);
-
-    // init client
     client_t *client = l_get_client_instance(server_handle->data);
     server_t *server = server_handle->data;
 
-    // accept connection, and `client->handle` is the client end
-    UV_CHECK(uv_accept(server_handle, (uv_stream_t *) &client->handle));
+    if (client == NULL) {
+        l_warn("%s: uv_tcp_init failed when connect", __func__);
+        return;
+    }
 
-    // read data from connection and invoke `server->on_read_cb`
-    if (server->on_read_cb)
-        uv_read_start((uv_stream_t *) &client->handle, alloc_buffer, server->on_read_cb);
+    // accept connection, and `client->handle` is the client end
+    if (uv_accept(server_handle, (uv_stream_t *) &client->handle) == 0) {
+        // read data from connection and invoke `server->on_read_cb`
+        if (server->on_read_cb)
+            uv_read_start((uv_stream_t *) &client->handle, alloc_buffer, server->on_read_cb);
+    } else {
+        uv_close((uv_handle_t *) &client->handle, l_server_on_close);
+    }
 }
 
 static void l_server_on_close(uv_handle_t *client_handle)

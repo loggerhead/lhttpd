@@ -1,8 +1,8 @@
 #ifndef _COMMON_H
 
 #include <uv.h>
-#include <http_parser.h>
 #include "../config.h"
+#include "http_parser.h"
 #include "uthash.h"
 
 #define UNINIT         -1
@@ -41,7 +41,7 @@ struct client_t {
 };
 
 struct server_t {
-    char *ip;
+    const char *ip;
     int port;
     uv_loop_t loop;
     uv_tcp_t handle;

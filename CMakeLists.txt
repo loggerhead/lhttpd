@@ -17,24 +17,22 @@ set (DEFAULT_PORT 9999)
 configure_file(config.h.in config.h)
 
 if (${DEBUG})
-    set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
+    set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall -Wno-unused-function ${CMAKE_C_FLAGS}")
 else ()
     set (CMAKE_C_FLAGS "-std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 endif()
 
 set (SOURCES ${SOURCES}
+        src/http_parser.c
         src/httpclient.c
         src/httpserver.c
         src/httputil.c
         src/util.c)
 
 find_library(LIBUV uv)
-find_library(LIBJSON json-c)
 
 if (${LIBUV} MATCHES ".*-NOTFOUND")
     message(FATAL_ERROR "Not found libuv")
-elseif (${LIBJSON} MATCHES ".*-NOTFOUND")
-    message(FATAL_ERROR "Not found libjson-c")
 endif()
 
 include_directories(${PROJECT_BINARY_DIR} "include" "src")

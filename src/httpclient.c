@@ -3,6 +3,11 @@
 #include "httputil.h"
 #include "util.h"
 
+typedef struct {
+    uv_write_t req;
+    uv_buf_t buf;
+} write_req_t;
+
 char *l_get_ip(client_t *client, char ip[17])
 {
     struct sockaddr addr;
@@ -17,14 +22,13 @@ char *l_get_ip(client_t *client, char ip[17])
 void l_free_request(client_t *client)
 {
     L_FREE(client->url);
-    l_free_headers(client->headers);
     L_FREE(client->body);
+    l_free_headers(client->headers);
 }
 
 void l_reset_client(client_t *client)
 {
-    // TODO: remove comment
-    // l_free_request(client);
+    l_free_request(client);
 
     http_parser_init(&client->parser, HTTP_REQUEST);
 
@@ -41,11 +45,16 @@ client_t *l_get_client_instance(server_t *server)
 {
     client_t *client = l_calloc(1, sizeof(client_t));
 
-    UV_CHECK(uv_tcp_init(&server->loop, &client->handle));
-    // set `xxx.data` as a hook
-    client->handle.data = client;
-    client->parser.data = client;
-    client->server = server;
+    if (uv_tcp_init(&server->loop, &client->handle) == 0) {
+        http_parser_init(&client->parser, HTTP_REQUEST);
+        // set `xxx.data` as a hook
+        client->handle.data = client;
+        client->parser.data = client;
+        client->server = server;
+    } else {
+        L_FREE(client);
+        client = NULL;
+    }
 
     return client;
 }
@@ -74,7 +83,7 @@ char *l_generate_response(client_t *client, const char *status_code,
 
     char *tmp = l_mprintf("HTTP/%d.%d %s %s\r\n"
                           "server: %s/%s",
-                          http_minor, http_minor,
+                          http_major, http_minor,
                           status_code, l_status_code(status_code),
                           APP_NAME, APP_VERSION);
     char *response;
@@ -96,25 +105,32 @@ char *l_generate_response(client_t *client, const char *status_code,
                              "Content-Length: %d\r\n"
                              "\r\n%s",
                              tmp, content_type, strlen(body), body);
-        L_FREE(tmp);
     } else {
         response = l_mprintf("%s\r\n\r\n", tmp);
-        L_FREE(tmp);
     }
 
+    L_FREE(tmp);
     return response;
 }
 
 
+static void free_write_req(uv_write_t *req, int status)
+{
+    if (status < 0) {
+        l_warn("send bytes error: %s", uv_strerror(status));
+    }
+    write_req_t *wr = (write_req_t *) req;
+    free(wr->buf.base);
+    free(wr);
+}
+
 const char *l_send_bytes(client_t *client, const char *bytes, size_t len)
 {
-    uv_write_t req;
-    uv_buf_t out = {
-        .base = (char *)bytes,
-        .len  = len
-    };
+    write_req_t *req = l_malloc(sizeof(*req));
+    req->buf = uv_buf_init((char *) l_malloc(len), len);
+    memcpy(req->buf.base, bytes, len);
 
-    uv_write(&req, (uv_stream_t *) &client->handle, &out, 1, NULL);
+    uv_write((uv_write_t *) req, (uv_stream_t *) &client->handle, &req->buf, 1, free_write_req);
 
     return "";
 }
@@ -126,8 +142,7 @@ const char *l_send_response(client_t *client, const char *status_code,
 
     char *response = l_generate_response(client, status_code, headers, body);
     const char *errmsg = l_send_bytes(client, response, strlen(response));
-    // TODO: free response after send
-    // L_FREE(response);
+    L_FREE(response);
 
     return errmsg;
 }
