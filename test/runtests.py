@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-10 17:10:18
+# @Last Modified time: 2015-06-10 22:03:02
 
 import os
 import json
@@ -21,9 +21,6 @@ TEST_URL = 'http://%s:%d/' % (TEST_HOST, TEST_PORT)
 NULL_OUT = open("/dev/null","wb")
 
 
-def compile_test(filename):
-    subprocess.call(["make", "all", 'FILENAME="%s"' % filename], stdout=NULL_OUT)
-
 def run_test(filename, in_background=False, args=[]):
     execname = os.path.splitext(filename)[0]
     args = ["./"+execname] + [str(arg) for arg in args]
@@ -38,7 +35,6 @@ class BaseTestCase(unittest.TestCase, object):
         if testname in BaseTestCase.__name__:
             return
 
-        compile_test(testname)
         run_test(testname)
 
 class BaseServerTestCase(unittest.TestCase, object):
@@ -47,7 +43,6 @@ class BaseServerTestCase(unittest.TestCase, object):
         if testname in BaseServerTestCase.__name__:
             return
 
-        compile_test(testname)
         self.server_process = run_test(testname, in_background=True, args=[TEST_HOST, TEST_PORT])
         time.sleep(0.1)
 

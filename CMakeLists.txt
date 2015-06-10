@@ -1,17 +1,13 @@
 cmake_minimum_required (VERSION 2.6)
 
 set (APP_VERSION 0.1)
-
 set (NAME lhttpd)
 project (${NAME})
-
 include (CheckLibraryExists)
 
-set (ON 1)
-set (OFF 0)
-
+set (CMAKE_MACOSX_RPATH 0)
+set (DEBUG 1)
 set (APP_NAME ${NAME})
-set (DEBUG ${ON})
 set (DEFAULT_PORT 9999)
 
 configure_file(config.h.in config.h)
@@ -37,8 +33,13 @@ endif()
 
 include_directories(${PROJECT_BINARY_DIR} "include" "src")
 
-add_library (${NAME} ${SOURCES})
-target_link_libraries (${NAME} uv json-c)
+add_library(${NAME} SHARED ${SOURCES})
+set_target_properties(${NAME} PROPERTIES
+    PUBLIC_HEADER "${NAME}.h"
+    VERSION ${APP_VERSION}
+    SOVERSION 1)
+target_link_libraries(${NAME} uv)
 
-install (TARGETS ${NAME} DESTINATION lib)
-install (FILES ${NAME}.h DESTINATION include)
+install(TARGETS ${NAME}
+        LIBRARY DESTINATION lib
+        PUBLIC_HEADER DESTINATION include)
