@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-10 22:03:02
+# @Last Modified time: 2015-06-10 22:17:29
 
 import os
 import json
@@ -70,7 +70,7 @@ class test_httpserver(BaseServerTestCase):
             grequests.get(TEST_URL + "path/to/resouce"),
             grequests.post(TEST_URL, data=data),
             grequests.post(TEST_URL, data=json.dumps(data)),
-            grequests.post(TEST_URL, data='A' * (1024**3)),
+            grequests.post(TEST_URL, data='A' * (1024**2)),
         ]
         responses = grequests.map(rs)
         for response in responses:
