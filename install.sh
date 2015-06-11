@@ -2,10 +2,12 @@
 # @Author: fz
 # @Date:   2015-05-15 15:55:41
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-10 22:03:49
+# @Last Modified time: 2015-06-11 13:41:54
 
-if [[ "$1" == "make" ]];then
+if [[ "$1" == "make" ]] || [[ -z $1 ]];then
     cmake . && make
+elif [[ "$1" == "install" ]];then
+    make install
 elif [[ "$1" == "clean" ]];then
     cd test
     make clean

@@ -11,10 +11,20 @@ before_install:
       brew update;
     fi
 install:
-  - git clone https://github.com/libuv/libuv.git
-  - cd libuv
-  - wget -q https://gist.githubusercontent.com/pmq20/837c0c8e175eba9eb0e4/raw/00d01205efb54ea242e53088ee8339ec4231939f/autogen.sh -O autogen.sh
-  - sh autogen.sh && ./configure && make && make check && sudo make install
   - sudo pip install requests grequests
+  - if [ $TRAVIS_OS_NAME = linux ]; then
+      git clone git@github.com:libuv/libuv.git;
+      cd libuv;
+      git clone https://chromium.googlesource.com/external/gyp.git build/gyp;
+      ./gyp_uv.py -f make;
+      make -C out;
+      ./configure;
+      make;
+      make check;
+      sudo make install;
+    elif [ $TRAVIS_OS_NAME = osx ]; then
+      brew install --HEAD libuv;
+    fi
 script:
   - ./install.sh test
+  - sudo ./install.sh install
