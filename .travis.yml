@@ -15,6 +15,7 @@ install:
       sh autogen.sh || sh autogen.sh;
       ./configure && make;
       sudo make install;
+      sudo ldconfig;
       cd ..;
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew install --HEAD libuv;

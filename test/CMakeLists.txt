@@ -3,6 +3,12 @@ cmake_minimum_required (VERSION 2.6)
 set (NAME lhttpd)
 project (${NAME}_test)
 
+if (${DEBUG})
+    set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall -Wno-unused-function ${CMAKE_C_FLAGS}")
+else ()
+    set (CMAKE_C_FLAGS "-std=gnu99 -Wall ${CMAKE_C_FLAGS}")
+endif()
+
 set (SOURCES ${SOURCES}
         test_httpserver.c
         test_httputil.c
@@ -19,6 +25,5 @@ link_directories(..)
 foreach (SOURCE ${SOURCES})
     string(REPLACE ".c" "" EXEC ${SOURCE})
     add_executable(${EXEC} ${SOURCE})
-    set_target_properties(${EXEC} PROPERTIES C_STANDARD 99)
     target_link_libraries(${EXEC} ${NAME} uv)
 endforeach()
