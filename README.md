@@ -5,29 +5,29 @@
 * [libuv](https://github.com/libuv/libuv)
 * [cmake](http://www.cmake.org/)
 
+##Test Dependency
+if you are **linux** user, run `sudo apt-get install python-dev` first.
+
+```shell
+sudo pip install requests grequests
+```
+
 #Install
 Below commands will compile and move files to `/usr/local/lib` and `/usr/local/include`:
 
 ```shell
-./install make
-sudo make install
+./install.sh
 ```
 
-#Test
-##Dependency
-if you are **linux** user, run `sudo apt-get install python-dev` first.
+**NOTE**: If you are linux user, please run beblow commands to update your shared libraries.
 
 ```shell
-sudo pip install grequests
-```
-
-##run
-```shell
-./install.sh test
+sudo echo "/usr/local/lib" >> /etc/ld.so.conf
+sudo ldconfig
 ```
 
 #Usage
-Create a `foo.c` and type into below codes:
+See [examples](https://github.com/loggerhead/lhttpd/tree/master/examples).
 
 ```c
 #include <lhttpd.h>
@@ -56,5 +56,5 @@ int main(int argc, char *argv[])
 compile and run!
 
 ```shell
-gcc -o foo foo.c -L/usr/local/lib -I/usr/local/include -llhttpd -luv && ./foo
+gcc -o foo examples/foo.c -llhttpd && ./foo
 ```
