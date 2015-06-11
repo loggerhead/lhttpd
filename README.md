@@ -1,3 +1,6 @@
+#Lhttpd
+[![Travis Build Status](https://travis-ci.org/loggerhead/lhttpd.svg?branch=master)](https://travis-ci.org/loggerhead/lhttpd)
+
 #Dependency
 * [libuv](https://github.com/libuv/libuv)
 * [cmake](http://www.cmake.org/)
@@ -20,7 +23,7 @@ sudo pip install grequests
 
 ##run
 ```shell
-./install test
+./install.sh test
 ```
 
 #Usage
