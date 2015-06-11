@@ -25,6 +25,11 @@ set (SOURCES ${SOURCES}
         src/httputil.c
         src/util.c)
 
+set (HEADERS ${HEADERS}
+        include/${NAME}.h
+        include/http_parser.h
+        include/uthash.h)
+
 find_library(LIBUV uv)
 
 if (${LIBUV} MATCHES ".*-NOTFOUND")
@@ -35,11 +40,10 @@ include_directories(${PROJECT_BINARY_DIR} "include" "src")
 
 add_library(${NAME} SHARED ${SOURCES})
 set_target_properties(${NAME} PROPERTIES
-    PUBLIC_HEADER "include/${NAME}.h"
     VERSION ${APP_VERSION}
     SOVERSION 1)
 target_link_libraries(${NAME} uv)
 
 install(TARGETS ${NAME}
-        LIBRARY DESTINATION lib
-        PUBLIC_HEADER DESTINATION include)
+        LIBRARY DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
