@@ -1,20 +1,8 @@
-sudo: required
 language: c
-os:
-  - linux
-  - osx
-env:
-  matrix:
-    - CI_TARGET=clang
-    - CI_TARGET=gcc
-matrix:
-  include:
-    - os: osx
-      env: CI_TARGET=clang
-      compiler: clang
-    - os: osx
-      env: CI_TARGET=gcc
-      compiler: gcc
+sudo: required
+compiler:
+  - clang
+  - gcc
 before_install:
   - if [ $TRAVIS_OS_NAME = linux ]; then
       sudo apt-get update;
@@ -24,7 +12,9 @@ before_install:
     fi
 install:
   - git clone https://github.com/libuv/libuv.git
-  - cd libuv && sh autogen.sh && ./configure && make && make check && sudo make install
+  - cd libuv
+  - wget -q https://gist.githubusercontent.com/pmq20/837c0c8e175eba9eb0e4/raw/00d01205efb54ea242e53088ee8339ec4231939f/autogen.sh -O autogen.sh
+  - sh autogen.sh && ./configure && make && make check && sudo make install
   - sudo pip install requests grequests
 script:
   - ./install.sh test
