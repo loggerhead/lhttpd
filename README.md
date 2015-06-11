@@ -1,5 +1,5 @@
 #Lhttpd
-[![Travis Build Status](https://travis-ci.org/loggerhead/lhttpd.svg?branch=master)](https://travis-ci.org/loggerhead/lhttpd)
+[![Travis Build Status](https://travis-ci.org/loggerhead/lhttpd.svg)](https://travis-ci.org/loggerhead/lhttpd)
 
 #Dependency
 * [libuv](https://github.com/libuv/libuv)
