@@ -21,7 +21,7 @@ install:
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew install --HEAD libuv;
     fi
-  - sudo pip install requests grequests
 script:
-  - ./install.sh test
-  - sudo ./install.sh install
+  - ls /usr/local/include
+  - ls /usr/local/lib | grep libuv
+  - echo $PATH
