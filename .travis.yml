@@ -6,24 +6,21 @@ compiler:
 before_install:
   - if [ $TRAVIS_OS_NAME = linux ]; then
       sudo apt-get update;
+      sudo apt-get install build-essential;
       sudo apt-get install python-dev;
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew update;
     fi
 install:
-  - sudo pip install requests grequests
   - if [ $TRAVIS_OS_NAME = linux ]; then
-      libtoolize --version;
-      aclocal --version;
-      automake --version;
-      autoconf --version;
       git clone https://github.com/libuv/libuv.git && cd libuv;
-      sh autogen.sh || autoreconf --force
+      sh autogen.sh || sh autogen.sh;
       ./configure && make && make check;
       sudo make install;
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew install --HEAD libuv;
     fi
+  - sudo pip install requests grequests
 script:
   - ./install.sh test
   - sudo ./install.sh install
