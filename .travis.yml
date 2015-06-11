@@ -13,13 +13,12 @@ before_install:
 install:
   - sudo pip install requests grequests
   - if [ $TRAVIS_OS_NAME = linux ]; then
+      libtoolize --version;
+      aclocal --version;
+      automake --version;
+      autoconf --version;
       git clone https://github.com/libuv/libuv.git && cd libuv;
-      libtoolize;
-      aclocal;
-      aclocal -I m4;
-      automake --add-missing --copy;
-      autoconf;
-      git clone https://chromium.googlesource.com/external/gyp.git build/gyp;
+      sh autogen.sh || autoreconf --force
       ./configure && make && make check;
       sudo make install;
     elif [ $TRAVIS_OS_NAME = osx ]; then
