@@ -2,7 +2,7 @@
 # @Author: fz
 # @Date:   2015-05-15 15:55:41
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-11 13:52:37
+# @Last Modified time: 2015-06-11 14:58:08
 
 if [[ "$1" == "make" ]] || [[ -z $1 ]];then
     cmake . && make

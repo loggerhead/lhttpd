@@ -35,7 +35,7 @@ include_directories(${PROJECT_BINARY_DIR} "include" "src")
 
 add_library(${NAME} SHARED ${SOURCES})
 set_target_properties(${NAME} PROPERTIES
-    PUBLIC_HEADER "${NAME}.h"
+    PUBLIC_HEADER "include/${NAME}.h"
     VERSION ${APP_VERSION}
     SOVERSION 1)
 target_link_libraries(${NAME} uv)

@@ -15,8 +15,9 @@ install:
   - if [ $TRAVIS_OS_NAME = linux ]; then
       git clone https://github.com/libuv/libuv.git && cd libuv;
       sh autogen.sh || sh autogen.sh;
-      ./configure && make && make check;
+      ./configure && make;
       sudo make install;
+      cd ..
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew install --HEAD libuv;
     fi

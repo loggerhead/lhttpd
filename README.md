@@ -27,6 +27,8 @@ sudo pip install grequests
 ```
 
 #Usage
+Create a `foo.c` and type into below codes:
+
 ```c
 #include <lhttpd.h>
 
@@ -49,4 +51,10 @@ int main(int argc, char *argv[])
     l_start_server(server);
     return 0;
 }
+```
+
+compile and run!
+
+```shell
+gcc -o foo foo.c -llhttpd -luv && ./foo
 ```
