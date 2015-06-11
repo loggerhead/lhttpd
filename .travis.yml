@@ -6,8 +6,6 @@ compiler:
 before_install:
   - if [ $TRAVIS_OS_NAME = linux ]; then
       sudo apt-get update;
-      sudo apt-get install build-essential;
-      sudo apt-get install python-dev;
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew update;
     fi
@@ -21,7 +19,7 @@ install:
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew install --HEAD libuv;
     fi
+  - sudo pip install requests grequests
 script:
-  - ls /usr/local/include
-  - ls /usr/local/lib | grep libuv
-  - echo $PATH
+  - ./install.sh test
+  - sudo ./install.sh install

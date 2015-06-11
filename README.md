@@ -56,5 +56,5 @@ int main(int argc, char *argv[])
 compile and run!
 
 ```shell
-gcc -o foo foo.c -llhttpd -luv && ./foo
+gcc -o foo foo.c -L/usr/local/lib -I/usr/local/include -llhttpd -luv && ./foo
 ```
