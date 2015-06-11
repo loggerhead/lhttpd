@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <errno.h>
-#include <time.h>
 #include "util.h"
 
 /******************************** Log ****************************************/
@@ -126,32 +125,17 @@ void l_lowercase(char *str)
     }
 }
 
-/********************************* Time **************************************/
-// NOTE: not thread safe
-const char *l_get_now_time()
-{
-    static char buf[80];
-
-    time_t rawnow;
-    time(&rawnow);
-    struct tm *now = localtime(&rawnow);
-
-    strftime(buf, 100, "%Y-%m-%d %H:%M", now);
-
-    return buf;
-}
-
 /********************************* HASH **************************************/
-hitem_t *l_hput(hitem_t *hashtbl, const char *key, const char *value)
+l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value)
 {
-    hitem_t *item = NULL;
+    l_hitem_t *item = NULL;
 
     HASH_FIND_STR(hashtbl, key, item);
     if (!item) {
-        item = l_malloc(sizeof(hitem_t));
+        item = l_malloc(sizeof(l_hitem_t));
         item->key = (char *)key;
 
-        // NOTE: `key` is not variable `key` but hitem_t field `key`
+        // NOTE: `key` is not variable `key` but l_hitem_t field `key`
         HASH_ADD_STR(hashtbl, key, item);
     }
     item->value = (char *)value;
@@ -159,16 +143,16 @@ hitem_t *l_hput(hitem_t *hashtbl, const char *key, const char *value)
     return hashtbl;
 }
 
-char *l_hget(hitem_t *hashtbl, const char *key)
+char *l_hget(l_hitem_t *hashtbl, const char *key)
 {
-    hitem_t *item = NULL;
+    l_hitem_t *item = NULL;
     HASH_FIND_STR(hashtbl, key, item);
     return item ? item->value : NULL;
 }
 
-void l_hfree(hitem_t *hashtbl, hitem_free_fn free_fn)
+void l_hfree(l_hitem_t *hashtbl, l_hitem_free_fn free_fn)
 {
-    hitem_t *item, *tmp;
+    l_hitem_t *item, *tmp;
 
     HASH_ITER(hh, hashtbl, item, tmp) {
         HASH_DEL(hashtbl, item);

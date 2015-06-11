@@ -16,7 +16,7 @@ XX("Accept-Encoding", "gzip, deflate, sdch")                                  \
 XX("Accept-Language", "zh-CN,zh;q=0.8")                                       \
 XX("If-Modified-Since", "Wed, 19 Nov 2014 03,01,22 GMT")
 
-static hitem_t *_hashtbl;
+static l_hitem_t *_hashtbl;
 
 static char *HEADERS(char *field)
 {
@@ -31,8 +31,8 @@ static char *HEADERS(char *field)
 
 int main()
 {
-    hitem_t *headers = NULL;
-    hitem_t *header;
+    l_hitem_t *headers = NULL;
+    l_hitem_t *header;
     HEADERS("");
 
     L_HITER(_hashtbl, header) {

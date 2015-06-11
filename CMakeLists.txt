@@ -5,17 +5,17 @@ set (NAME lhttpd)
 project (${NAME})
 include (CheckLibraryExists)
 
-set (CMAKE_MACOSX_RPATH 0)
 set (DEBUG 1)
 set (APP_NAME ${NAME})
 set (DEFAULT_PORT 9999)
+set (CMAKE_MACOSX_RPATH 0)
 
 configure_file(config.h.in config.h)
 
 if (${DEBUG})
     set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall -Wno-unused-function ${CMAKE_C_FLAGS}")
 else ()
-    set (CMAKE_C_FLAGS "-std=gnu99 -Wall ${CMAKE_C_FLAGS}")
+    set (CMAKE_C_FLAGS "-O2 -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 endif()
 
 set (SOURCES ${SOURCES}

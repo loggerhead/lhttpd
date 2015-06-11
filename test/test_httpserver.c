@@ -1,7 +1,7 @@
 #include "../include/lhttpd.h"
 #include <assert.h>
 
-const char *on_request(client_t *client)
+const char *on_request(l_client_t *client)
 {
     l_log("==> %s", client->url);
     l_print_headers(client->headers);
@@ -15,7 +15,7 @@ const char *on_request(client_t *client)
 
 int main(int argc, char *argv[])
 {
-    server_t *server = l_get_server_instance();
+    l_server_t *server = l_get_server_instance();
     if (argc == 2)
         l_set_ip_port(server, NULL, atoi(argv[1]));
     else if (argc == 3)

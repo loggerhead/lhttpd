@@ -1,9 +1,10 @@
 #include "../include/lhttpd.h"
+#include <stdio.h>
 #include <assert.h>
 
 int main()
 {
-    char buf[BUFSIZ];
+    char buf[8192];
     const char *str = "hello, world";
     char *tmp;
 
@@ -31,13 +32,11 @@ int main()
     l_log(tmp);
     L_FREE(tmp);
 
-    l_log("%s", l_get_now_time());
-
-    hitem_t *hashtbl = NULL;
+    l_hitem_t *hashtbl = NULL;
     hashtbl = l_hput(hashtbl, "key", "value");
     char *value = l_hget(hashtbl, "key");
     assert(!strcmp(value, "value"));
-    hitem_t *item = NULL;
+    l_hitem_t *item = NULL;
     L_HITER(hashtbl, item) {
         assert(!strcmp(item->value, "value"));
     }

@@ -8,25 +8,15 @@ typedef struct {
     uv_buf_t buf;
 } write_req_t;
 
-char *l_get_ip(client_t *client, char ip[17])
-{
-    struct sockaddr addr;
-    int namelen = sizeof(addr);
 
-    uv_tcp_getsockname(&client->handle, &addr, &namelen);
-    uv_ip4_name((const struct sockaddr_in *)&addr, ip, 17);
-
-    return ip;
-}
-
-void l_free_request(client_t *client)
+void l_free_request(l_client_t *client)
 {
     L_FREE(client->url);
     L_FREE(client->body);
     l_free_headers(client->headers);
 }
 
-void l_reset_client(client_t *client)
+void l_reset_client(l_client_t *client)
 {
     l_free_request(client);
 
@@ -41,9 +31,9 @@ void l_reset_client(client_t *client)
     client->readed_len = 0;
 }
 
-client_t *l_get_client_instance(server_t *server)
+l_client_t *l_get_client_instance(l_server_t *server)
 {
-    client_t *client = l_calloc(1, sizeof(client_t));
+    l_client_t *client = l_calloc(1, sizeof(l_client_t));
 
     if (uv_tcp_init(&server->loop, &client->handle) == 0) {
         http_parser_init(&client->parser, HTTP_REQUEST);
@@ -60,7 +50,7 @@ client_t *l_get_client_instance(server_t *server)
 }
 
 
-static hitem_t *_hashtbl;
+static l_hitem_t *_hashtbl;
 
 const char *l_status_code(const char *code)
 {
@@ -73,8 +63,8 @@ const char *l_status_code(const char *code)
     return l_hget(_hashtbl, code);
 }
 
-char *l_generate_response(client_t *client, const char *status_code,
-                          hitem_t *headers, const char *body)
+char *l_generate_response(l_client_t *client, const char *status_code,
+                          l_hitem_t *headers, const char *body)
 {
     int http_major = client->parser.http_major;
     int http_minor = client->parser.http_minor;
@@ -88,7 +78,7 @@ char *l_generate_response(client_t *client, const char *status_code,
                           APP_NAME, APP_VERSION);
     char *response;
 
-    hitem_t *h;
+    l_hitem_t *h;
     L_HITER(headers, h) {
         response = l_mprintf("%s\r\n%s: %s", tmp, h->key, h->value);
         L_FREE(tmp);
@@ -124,7 +114,7 @@ static void free_write_req(uv_write_t *req, int status)
     free(wr);
 }
 
-const char *l_send_bytes(client_t *client, const char *bytes, size_t len)
+const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len)
 {
     write_req_t *req = l_malloc(sizeof(*req));
     req->buf = uv_buf_init((char *) l_malloc(len), len);
@@ -135,8 +125,8 @@ const char *l_send_bytes(client_t *client, const char *bytes, size_t len)
     return "";
 }
 
-const char *l_send_response(client_t *client, const char *status_code,
-                            hitem_t *headers, const char *body)
+const char *l_send_response(l_client_t *client, const char *status_code,
+                            l_hitem_t *headers, const char *body)
 {
     headers = l_hput(headers, "Connection", "keep-alive");
 
@@ -147,12 +137,12 @@ const char *l_send_response(client_t *client, const char *status_code,
     return errmsg;
 }
 
-const char *l_send_code(client_t *client, const char *status_code)
+const char *l_send_code(l_client_t *client, const char *status_code)
 {
     return l_send_response(client, status_code, NULL, NULL);
 }
 
-const char *l_send_body(client_t *client, const char *body)
+const char *l_send_body(l_client_t *client, const char *body)
 {
     return l_send_response(client, "200", NULL, body);
 }

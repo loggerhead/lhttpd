@@ -14,7 +14,7 @@ static void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *b
 // HTTP parse
 static int on_url(http_parser *parser, const char *at, size_t len)
 {
-    client_t *client = parser->data;
+    l_client_t *client = parser->data;
 
     client->url = strndup(at, len);
     return 0;
@@ -22,7 +22,7 @@ static int on_url(http_parser *parser, const char *at, size_t len)
 
 static int on_header_field(http_parser *parser, const char *at, size_t len)
 {
-    client_t *client = parser->data;
+    l_client_t *client = parser->data;
 
     const char *field = strndup(at, len);
 
@@ -36,14 +36,14 @@ static int on_header_field(http_parser *parser, const char *at, size_t len)
 
 static int on_header_value(http_parser *parser, const char *at, size_t len)
 {
-    client_t *client = parser->data;
+    l_client_t *client = parser->data;
 
     const char *value = strndup(at, len);
 
     if (client->content_length == WAIT_FOR_VALUE)
         client->content_length = atoi(value);
 
-    for (hitem_t *h = client->headers; h; h = h->hh.next) {
+    for (l_hitem_t *h = client->headers; h; h = h->hh.next) {
         if (h->value == NULL) {
             client->headers = l_add_header(client->headers, h->key, value);
             break;
@@ -55,7 +55,7 @@ static int on_header_value(http_parser *parser, const char *at, size_t len)
 
 static int on_body(http_parser *parser, const char *at, size_t len)
 {
-    client_t *client = parser->data;
+    l_client_t *client = parser->data;
 
     if (!client->body) {
         client->body = strndup(at, len);
@@ -79,7 +79,7 @@ static int on_body(http_parser *parser, const char *at, size_t len)
 
 static int on_message_complete(http_parser *parser)
 {
-    client_t *client = parser->data;
+    l_client_t *client = parser->data;
 
     if (client->content_length == UNINIT)
         client->content_length = 0;
@@ -105,7 +105,7 @@ static http_parser_settings *get_http_parser_settings()
     return parser_settings;
 }
 
-static int do_http_parse(client_t *client, const char *at, size_t len)
+static int do_http_parse(l_client_t *client, const char *at, size_t len)
 {
     size_t nparsed = http_parser_execute(&client->parser, get_http_parser_settings(), at, len);
 
@@ -116,7 +116,7 @@ static int do_http_parse(client_t *client, const char *at, size_t len)
     return 0;
 }
 
-static const char *l_server_on_request(client_t *client)
+static const char *l_server_on_request(l_client_t *client)
 {
     switch(client->parser.method) {
         case HTTP_GET:
@@ -130,11 +130,11 @@ static const char *l_server_on_request(client_t *client)
     return "";
 }
 
-static const char *l_server_on_data(client_t *client, const char *buf, ssize_t nread)
+static const char *l_server_on_data(l_client_t *client, const char *buf, ssize_t nread)
 {
     const char *errmsg = NULL;
 
-    server_t *server = client->server;
+    l_server_t *server = client->server;
 
     if (do_http_parse(client, buf, nread)) {
         errmsg = "parse HTTP request failed";
@@ -151,8 +151,8 @@ static const char *l_server_on_data(client_t *client, const char *buf, ssize_t n
 
 static void l_server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv_buf_t *buf)
 {
-    client_t *client = client_handle->data;
-    server_t *server = client->server;
+    l_client_t *client = client_handle->data;
+    l_server_t *server = client->server;
     const char *errmsg = NULL;
 
     // nread == 0 indicating that at this point there is nothing to be read.
@@ -178,10 +178,8 @@ static void l_server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv
 
 static void l_server_on_connect(uv_stream_t *server_handle, int status)
 {
-    TRACE();
-
-    client_t *client = l_get_client_instance(server_handle->data);
-    server_t *server = server_handle->data;
+    l_client_t *client = l_get_client_instance(server_handle->data);
+    l_server_t *server = server_handle->data;
 
     if (client == NULL) {
         l_warn("%s: uv_tcp_init failed when connect", __func__);
@@ -200,17 +198,15 @@ static void l_server_on_connect(uv_stream_t *server_handle, int status)
 
 static void l_server_on_close(uv_handle_t *client_handle)
 {
-    TRACE();
-
-    client_t *client = client_handle->data;
+    l_client_t *client = client_handle->data;
     l_reset_client(client);
     L_FREE(client);
 }
 
 
-server_t *l_get_server_instance()
+l_server_t *l_get_server_instance()
 {
-    server_t *server = l_calloc(1, sizeof(*server));
+    l_server_t *server = l_calloc(1, sizeof(*server));
     server->ip = "0.0.0.0";
     server->port = DEFAULT_PORT;
     server->handle.data = server;
@@ -222,7 +218,7 @@ server_t *l_get_server_instance()
     return server;
 }
 
-void l_set_ip_port(server_t *server, const char *ip, int port)
+void l_set_ip_port(l_server_t *server, const char *ip, int port)
 {
     if (ip)
         server->ip = ip;
@@ -230,7 +226,7 @@ void l_set_ip_port(server_t *server, const char *ip, int port)
         server->port = port;
 }
 
-void l_start_server(server_t *server)
+void l_start_server(l_server_t *server)
 {
     struct sockaddr_in addr;
 
