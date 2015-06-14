@@ -5,17 +5,17 @@
 
 static void l_http_init(l_client_t *client)
 {
-    bzero(&client->http, sizeof(client->http));
-    http_parser_init(&client->http.parser, HTTP_REQUEST);
-    client->http.content_length = UNINIT;
-    client->http.parser.data = client;
+    bzero(&client->req, sizeof(client->req));
+    http_parser_init(&client->parser, HTTP_REQUEST);
+    client->req.content_length = UNINIT;
+    client->parser.data = client;
 }
 
 void l_client_reset(l_client_t *client)
 {
-    L_FREE(client->http.url);
-    L_FREE(client->http.body);
-    l_free_headers(client->http.headers);
+    L_FREE(client->req.url);
+    L_FREE(client->req.body);
+    l_free_headers(client->req.headers);
 
     l_http_init(client);
 }
@@ -70,8 +70,8 @@ const char *l_status_code(int code)
 char *l_generate_response(l_client_t *client, int status_code,
                           l_hitem_t *headers, const char *body)
 {
-    int http_major = client->http.parser.http_major;
-    int http_minor = client->http.parser.http_minor;
+    int http_major = client->parser.http_major;
+    int http_minor = client->parser.http_minor;
     http_major = http_major ? http_major : 1;
     http_minor = http_minor >= 0 ? http_minor : 0;
 

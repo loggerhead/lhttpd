@@ -1,23 +1,47 @@
 #!/bin/bash
 
-if [[ -z $1 ]];then
-    cmake . && make
-    sudo make install
-    ./install.sh test
-elif [[ "$1" == "make" ]];then
-    cmake . && make
-elif [[ "$1" == "install" ]];then
-    sudo make install
-elif [[ "$1" == "clean" ]];then
-    cd test
+function _cmake_clean() {
+    if [[ ! -z $1 ]]; then cd $1; fi
+
     make clean
-    rm *.pyc
-    rm -rf *.dSYM
     rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile
-    cd ..
-    make clean
+
+    if [[ ! -z $1 ]]; then cd ..; fi
+}
+
+function _clean() {
+    _cmake_clean examples
+    _cmake_clean test
+    _cmake_clean
+
     rm -f install_manifest.txt
-    rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile
+    cd test
+    rm -f *.pyc
+    rm -rf *.dSYM
+    cd ..
+}
+
+function _make() {
+    cmake . && make
+}
+
+function _install() {
+    sudo make install
+}
+
+function _test() {
+    cd test && cmake . && make && python runtests.py && cd ..
+}
+
+if [[ -z $1 ]];then
+    _make
+    _install
+elif [[ "$1" == "make" ]];then
+    _make
+elif [[ "$1" == "install" ]];then
+    _install
+elif [[ "$1" == "clean" ]];then
+    _clean
 elif [[ "$1" == "test" ]];then
-    cd test && cmake . && make && python runtests.py
+    _test
 fi

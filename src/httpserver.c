@@ -13,7 +13,7 @@ static int on_url(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
-    client->http.url = strndup(at, len);
+    client->req.url = strndup(at, len);
     return 0;
 }
 
@@ -23,10 +23,10 @@ static int on_header_field(http_parser *parser, const char *at, size_t len)
 
     const char *field = strndup(at, len);
 
-    client->http.headers = l_add_header(client->http.headers, field, NULL);
+    client->req.headers = l_add_header(client->req.headers, field, NULL);
 
     if (!strcasecmp("content-length", field))
-        client->http.content_length = WAIT_FOR_VALUE;
+        client->req.content_length = WAIT_FOR_VALUE;
 
     return 0;
 }
@@ -37,12 +37,12 @@ static int on_header_value(http_parser *parser, const char *at, size_t len)
 
     const char *value = strndup(at, len);
 
-    if (client->http.content_length == WAIT_FOR_VALUE)
-        client->http.content_length = atoi(value);
+    if (client->req.content_length == WAIT_FOR_VALUE)
+        client->req.content_length = atoi(value);
 
-    for (l_hitem_t *h = client->http.headers; h; h = h->hh.next) {
+    for (l_hitem_t *h = client->req.headers; h; h = h->hh.next) {
         if (h->value == NULL) {
-            client->http.headers = l_add_header(client->http.headers, h->key, value);
+            client->req.headers = l_add_header(client->req.headers, h->key, value);
             break;
         }
     }
@@ -54,21 +54,21 @@ static int on_body(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
-    if (!client->http.body) {
-        client->http.body = strndup(at, len);
+    if (!client->req.body) {
+        client->req.body = strndup(at, len);
     } else {
-        char *tmp = l_realloc(client->http.body, client->http.body_nread + len);
+        char *tmp = l_realloc(client->req.body, client->req.body_nread + len);
 
         if (tmp) {
-            stpncpy(tmp + client->http.body_nread, at, len);
-            client->http.body = tmp;
+            stpncpy(tmp + client->req.body_nread, at, len);
+            client->req.body = tmp;
         } else {
             l_warn("%s: can't alloc enough memory", __func__);
             return HPE_UNKNOWN;
         }
     }
 
-    client->http.body_nread += len;
+    client->req.body_nread += len;
 
     return 0;
 }
@@ -76,11 +76,14 @@ static int on_body(http_parser *parser, const char *at, size_t len)
 static int on_message_complete(http_parser *parser)
 {
     l_client_t *client = parser->data;
+    // `parser.method` not support bit operation, so convert it.
+    l_convert_parser_method(client);
 
-    if (client->http.content_length == UNINIT)
-        client->http.content_length = 0;
+    if (client->req.content_length == UNINIT)
+        client->req.content_length = 0;
 
-    client->http.req_finished = TRUE;
+    client->req.is_finished = TRUE;
+
     return 0;
 }
 
@@ -103,24 +106,26 @@ static http_parser_settings *get_http_parser_settings()
 
 static int do_http_parse(l_client_t *client, const char *at, size_t len)
 {
-    size_t nparsed = http_parser_execute(&client->http.parser, get_http_parser_settings(), at, len);
+    size_t nparsed = http_parser_execute(&client->parser, get_http_parser_settings(), at, len);
 
     if (nparsed != len) {
-        l_warn("%s: %s", __func__, http_errno_description(HTTP_PARSER_ERRNO(&client->http.parser)));
+        l_warn("%s: %s", __func__, http_errno_description(HTTP_PARSER_ERRNO(&client->parser)));
         return -1;
     }
     return 0;
 }
 
 
+// TODO: url route, inspired by `bottle`
 static const char *l_server_on_request(l_client_t *client)
 {
     const char *errmsg = "";
-    switch(client->http.parser.method) {
-        case HTTP_GET:
-        case HTTP_POST:
-        case HTTP_PUT:
-        case HTTP_DELETE:
+    switch(client->req.method) {
+        case L_HTTP_GET:
+        case L_HTTP_POST:
+        case L_HTTP_PUT:
+        case L_HTTP_DELETE:
+        case L_HTTP_HEAD:
             break;
         default:
             l_send_code(client, 405);
@@ -139,7 +144,7 @@ static const char *l_server_on_data(l_client_t *client, const char *buf, ssize_t
     if (do_http_parse(client, buf, nread)) {
         errmsg = "parse HTTP request failed";
         l_client_reset(client);
-    } else if (client->http.req_finished) {
+    } else if (client->req.is_finished) {
         if (server->on_request_cb)
             errmsg = server->on_request_cb(client);
 

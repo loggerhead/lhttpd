@@ -56,5 +56,10 @@ int main(int argc, char *argv[])
 compile and run!
 
 ```shell
-gcc -o foo examples/foo.c -llhttpd && ./foo
+gcc -o foo examples/helloworld.c -llhttpd && ./foo
 ```
+
+#TODO
+* [ ] 增加url route（bottle）
+* [ ] 增加json/redis/sqlite支持
+* [ ] 完成API文档

@@ -2,11 +2,11 @@
 
 const char *on_request(l_client_t *client)
 {
-    l_log("==> %s", client->url);
-    l_print_headers(client->headers);
+    l_log("==> %s", client->req.url);
+    l_print_headers(client->req.headers);
     l_log("");
-    if (client->parser.method != HTTP_GET)
-        l_log("%.*s\n", 80, client->body);
+    if (client->req.method != L_HTTP_GET)
+        l_log("%.*s\n", 80, client->req.body);
 
     l_send_body(client, "hello, world");
     return "";

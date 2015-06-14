@@ -13,9 +13,9 @@ set (CMAKE_MACOSX_RPATH 0)
 configure_file(config.h.in config.h)
 
 if (${DEBUG})
-    set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall -Wno-unused-function ${CMAKE_C_FLAGS}")
+    set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 else ()
-    set (CMAKE_C_FLAGS "-O2 -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
+    set (CMAKE_C_FLAGS "-O2 -std=gnu99 -Wall -Wno-unused-function ${CMAKE_C_FLAGS}")
 endif()
 
 set (SOURCES ${SOURCES}

@@ -4,16 +4,32 @@
 #include "http_parser.h"
 #include "uthash.h"
 
-#ifndef TRUE
-# define TRUE  1
-#endif
+typedef enum {
 #ifndef FALSE
-# define FALSE 0
+    FALSE,
+#else
+    L_FALSE,
 #endif
+#ifndef TRUE
+    TRUE,
+#else
+    L_TRUE,
+#endif
+} l_bool_t;
+
+#define CONVERT_PARSER_METHOD(parser_method) 1 << (parser_method)
+
+typedef enum {
+#define XX(num, name, string) L_HTTP_ ## name = CONVERT_PARSER_METHOD(num),
+    HTTP_METHOD_MAP(XX)
+#undef XX
+    L_HTTP_UNKNOWN = 0,
+} l_http_method_t;
 
 typedef struct _hitem_t l_hitem_t;
 typedef struct _client_t l_client_t;
 typedef struct _server_t l_server_t;
+typedef struct _http_request_t l_http_request_t;
 
 typedef void         (*l_on_read_cb)    (uv_stream_t *, ssize_t, const uv_buf_t *);
 typedef const char * (*l_on_data_cb)    (l_client_t *, const char *, ssize_t);
@@ -27,20 +43,22 @@ struct _hitem_t {
     UT_hash_handle hh;
 };
 
+struct _http_request_t {
+    l_http_method_t method;
+    l_hitem_t *headers;
+    char *url;
+    char *body;
+    long content_length;
+    long body_nread;
+    l_bool_t is_finished;
+};
+
 struct _client_t {
     uv_tcp_t handle;
 
-    struct {
-        // DO NOT USE parser.content_length as content-length
-        http_parser parser;
-
-        l_hitem_t *headers;
-        char *url;
-        char *body;
-        long content_length;
-        long body_nread;
-        char req_finished;
-    } http;
+    // DO NOT USE parser.content_length as content-length
+    http_parser parser;
+    l_http_request_t req;
 
     l_server_t *server;
 };
@@ -51,6 +69,7 @@ struct _server_t {
 
     const char *ip;
     int port;
+
     l_on_data_cb on_data_cb;
     l_on_request_cb on_request_cb;
 };
@@ -75,10 +94,19 @@ char *l_generate_response(l_client_t *client, int status_code, l_hitem_t *header
 
 // HTTP Util
 int l_has_error(const char *errmsg);
+
 l_hitem_t *l_add_header(l_hitem_t *headers, const char *field, const char *value);
 char *l_get_header(l_hitem_t *headers, const char *field);
 void l_free_headers(l_hitem_t *headers);
 void l_print_headers(l_hitem_t *headers);
+
+void l_convert_parser_method(l_client_t *client);
+
+l_bool_t l_is_http_get(l_client_t *client);
+l_bool_t l_is_http_post(l_client_t *client);
+l_bool_t l_is_http_put(l_client_t *client);
+l_bool_t l_is_http_head(l_client_t *client);
+l_bool_t l_is_http_delete(l_client_t *client);
 
 // Util
 #if DEBUG
