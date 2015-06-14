@@ -66,12 +66,12 @@ l_client_t *l_create_client(l_server_t *server);
 void l_close_connection(l_client_t *client);
 
 const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len);
-const char *l_send_response(l_client_t *client, const char *status_code, l_hitem_t *headers, const char *body);
-const char *l_send_code(l_client_t *client, const char *status_code);
+const char *l_send_response(l_client_t *client, int status_code, l_hitem_t *headers, const char *body);
+const char *l_send_code(l_client_t *client, int status_code);
 const char *l_send_body(l_client_t *client, const char *body);
 
-const char *l_status_code(const char *code);
-char *l_generate_response(l_client_t *client, const char *status_code, l_hitem_t *headers, const char *body);
+const char *l_status_code(int code);
+char *l_generate_response(l_client_t *client, int status_code, l_hitem_t *headers, const char *body);
 
 // HTTP Util
 int l_has_error(const char *errmsg);

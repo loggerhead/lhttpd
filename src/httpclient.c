@@ -55,19 +55,19 @@ typedef struct {
 } write_req_t;
 
 
-static l_hitem_t *_hashtbl;
-
-const char *l_status_code(const char *code)
+const char *l_status_code(int code)
 {
-    if (!_hashtbl) {
-#define XX(key, value) _hashtbl = l_hput(_hashtbl, key, value);
+    static char *_status_codes[1000] = {0};
+    if (_status_codes[0] == NULL) {
+        _status_codes[0] = "";
+#define XX(code, description) _status_codes[code] = description;
         HTTP_STATUS_CODE_MAP(XX)
 #undef XX
     }
-    return l_hget(_hashtbl, code);
+    return _status_codes[code];
 }
 
-char *l_generate_response(l_client_t *client, const char *status_code,
+char *l_generate_response(l_client_t *client, int status_code,
                           l_hitem_t *headers, const char *body)
 {
     int http_major = client->http.parser.http_major;
@@ -75,7 +75,7 @@ char *l_generate_response(l_client_t *client, const char *status_code,
     http_major = http_major ? http_major : 1;
     http_minor = http_minor >= 0 ? http_minor : 0;
 
-    char *tmp = l_mprintf("HTTP/%d.%d %s %s\r\n"
+    char *tmp = l_mprintf("HTTP/%d.%d %d %s\r\n"
                           "server: %s/%s",
                           http_major, http_minor,
                           status_code, l_status_code(status_code),
@@ -129,7 +129,7 @@ const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len)
     return "";
 }
 
-const char *l_send_response(l_client_t *client, const char *status_code,
+const char *l_send_response(l_client_t *client, int status_code,
                             l_hitem_t *headers, const char *body)
 {
     char *response = l_generate_response(client, status_code, headers, body);
@@ -139,12 +139,12 @@ const char *l_send_response(l_client_t *client, const char *status_code,
     return errmsg;
 }
 
-const char *l_send_code(l_client_t *client, const char *status_code)
+const char *l_send_code(l_client_t *client, int status_code)
 {
     return l_send_response(client, status_code, NULL, NULL);
 }
 
 const char *l_send_body(l_client_t *client, const char *body)
 {
-    return l_send_response(client, "200", NULL, body);
+    return l_send_response(client, 200, NULL, body);
 }

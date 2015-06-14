@@ -1,15 +1,17 @@
 #include "../include/lhttpd.h"
 #include <assert.h>
 
+#define BODY_LEN 100000
+
 const char *on_request(l_client_t *client)
 {
-    l_log("==> %s", client->http.url);
-    l_print_headers(client->http.headers);
-    l_log("");
-    if (client->http.parser.method != HTTP_GET)
-        l_log("%.*s\n", 80, client->http.body);
+    char *body = l_malloc(BODY_LEN+1);
+    memset(body, 'F', BODY_LEN);
+    body[BODY_LEN] = '\0';
 
-    l_send_body(client, "hello, world");
+    l_send_body(client, body);
+
+    L_FREE(body);
     return "";
 }
 

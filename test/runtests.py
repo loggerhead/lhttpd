@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-14 19:12:38
+# @Last Modified time: 2015-06-14 20:57:20
 
 import os
 import json
@@ -14,7 +14,7 @@ import requests
 import grequests
 import subprocess
 
-TEST_PORT = 9998
+TEST_PORT = 9999
 TEST_HOST = '127.0.0.1'
 TEST_URL = 'http://%s:%d/' % (TEST_HOST, TEST_PORT)
 
@@ -61,7 +61,7 @@ class test_util(BaseTestCase):
 
 class test_httpserver(BaseServerTestCase):
     def runTest(self):
-        EXPECT = "hello, world"
+        EXPECT = 'F' * 100000
         data = {'foo': 'I am foo', 'bar': 'I like bar'}
 
         rs = [

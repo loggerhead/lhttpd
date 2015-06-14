@@ -123,7 +123,7 @@ static const char *l_server_on_request(l_client_t *client)
         case HTTP_DELETE:
             break;
         default:
-            l_send_code(client, "405");
+            l_send_code(client, 405);
             errmsg = "Not implement http method";
     }
 
