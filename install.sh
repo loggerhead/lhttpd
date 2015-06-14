@@ -11,11 +11,12 @@ elif [[ "$1" == "install" ]];then
 elif [[ "$1" == "clean" ]];then
     cd test
     make clean
-    rm -f install_manifest.txt
+    rm *.pyc
     rm -rf *.dSYM
     rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile
     cd ..
     make clean
+    rm -f install_manifest.txt
     rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile
 elif [[ "$1" == "test" ]];then
     cd test && cmake . && make && python runtests.py

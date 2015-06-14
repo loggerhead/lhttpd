@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-10 22:17:29
+# @Last Modified time: 2015-06-14 15:08:11
 
 import os
 import json
@@ -57,11 +57,6 @@ class test_util(BaseTestCase):
     pass
 
 class test_httpserver(BaseServerTestCase):
-    def create_client_socket(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((TEST_HOST, TEST_PORT))
-        return s
-
     def runTest(self):
         EXPECT = "hello, world"
         data = {'foo': 'I am foo', 'bar': 'I like bar'}

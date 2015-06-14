@@ -3,11 +3,7 @@ cmake_minimum_required (VERSION 2.6)
 set (NAME lhttpd)
 project (${NAME}_test)
 
-if (${DEBUG})
-    set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall -Wno-unused-function ${CMAKE_C_FLAGS}")
-else ()
-    set (CMAKE_C_FLAGS "-std=gnu99 -Wall ${CMAKE_C_FLAGS}")
-endif()
+set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
 set (SOURCES ${SOURCES}
         test_httpserver.c

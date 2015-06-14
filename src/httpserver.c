@@ -118,16 +118,19 @@ static int do_http_parse(l_client_t *client, const char *at, size_t len)
 
 static const char *l_server_on_request(l_client_t *client)
 {
+    const char *errmsg = "";
     switch(client->parser.method) {
         case HTTP_GET:
         case HTTP_POST:
+        case HTTP_PUT:
+        case HTTP_DELETE:
             break;
         default:
             l_send_code(client, "405");
-            return "Not implement http method";
+            errmsg = "Not implement http method";
     }
 
-    return "";
+    return errmsg;
 }
 
 static const char *l_server_on_data(l_client_t *client, const char *buf, ssize_t nread)

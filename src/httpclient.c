@@ -128,8 +128,6 @@ const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len)
 const char *l_send_response(l_client_t *client, const char *status_code,
                             l_hitem_t *headers, const char *body)
 {
-    headers = l_hput(headers, "Connection", "keep-alive");
-
     char *response = l_generate_response(client, status_code, headers, body);
     const char *errmsg = l_send_bytes(client, response, strlen(response));
     L_FREE(response);
