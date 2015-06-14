@@ -132,7 +132,7 @@ l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value)
 
     HASH_FIND_STR(hashtbl, key, item);
     if (!item) {
-        item = l_malloc(sizeof(l_hitem_t));
+        item = l_malloc(sizeof(*item));
         item->key = (char *)key;
 
         // NOTE: `key` is not variable `key` but l_hitem_t field `key`

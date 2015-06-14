@@ -14,7 +14,7 @@ const char *on_request(l_client_t *client)
 
 int main(int argc, char *argv[])
 {
-    l_server_t *server = l_get_server_instance();
+    l_server_t *server = l_create_server();
     server->on_request_cb = on_request;
     l_start_server(server);
     return 0;

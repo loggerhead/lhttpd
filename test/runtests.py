@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-14 15:08:11
+# @Last Modified time: 2015-06-14 19:12:38
 
 import os
 import json
@@ -23,7 +23,10 @@ NULL_OUT = open("/dev/null","wb")
 
 def run_test(filename, in_background=False, args=[]):
     execname = os.path.splitext(filename)[0]
-    args = ["./"+execname] + [str(arg) for arg in args]
+    execname = os.path.join(os.path.dirname(os.path.abspath(__file__)), execname)
+
+    args = [execname] + [str(arg) for arg in args]
+
     if in_background:
         return subprocess.Popen(args, preexec_fn=os.setsid)
     else:

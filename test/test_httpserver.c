@@ -3,11 +3,11 @@
 
 const char *on_request(l_client_t *client)
 {
-    l_log("==> %s", client->url);
-    l_print_headers(client->headers);
+    l_log("==> %s", client->http.url);
+    l_print_headers(client->http.headers);
     l_log("");
-    if (client->parser.method != HTTP_GET)
-        l_log("%.*s\n", 80, client->body);
+    if (client->http.parser.method != HTTP_GET)
+        l_log("%.*s\n", 80, client->http.body);
 
     l_send_body(client, "hello, world");
     return "";
@@ -15,7 +15,7 @@ const char *on_request(l_client_t *client)
 
 int main(int argc, char *argv[])
 {
-    l_server_t *server = l_get_server_instance();
+    l_server_t *server = l_create_server();
     if (argc == 2)
         l_set_ip_port(server, NULL, atoi(argv[1]));
     else if (argc == 3)

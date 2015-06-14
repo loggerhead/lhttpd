@@ -3,51 +3,56 @@
 #include "httputil.h"
 #include "util.h"
 
-typedef struct {
-    uv_write_t req;
-    uv_buf_t buf;
-} write_req_t;
-
-
-void l_free_request(l_client_t *client)
+static void l_http_init(l_client_t *client)
 {
-    L_FREE(client->url);
-    L_FREE(client->body);
-    l_free_headers(client->headers);
+    bzero(&client->http, sizeof(client->http));
+    http_parser_init(&client->http.parser, HTTP_REQUEST);
+    client->http.content_length = UNINIT;
+    client->http.parser.data = client;
 }
 
-void l_reset_client(l_client_t *client)
+void l_client_reset(l_client_t *client)
 {
-    l_free_request(client);
+    L_FREE(client->http.url);
+    L_FREE(client->http.body);
+    l_free_headers(client->http.headers);
 
-    http_parser_init(&client->parser, HTTP_REQUEST);
-
-    client->is_message_complete = 0;
-
-    client->url = NULL;
-    client->headers = NULL;
-    client->body = NULL;
-    client->content_length = UNINIT;
-    client->readed_len = 0;
+    l_http_init(client);
 }
 
-l_client_t *l_get_client_instance(l_server_t *server)
+l_client_t *l_create_client(l_server_t *server)
 {
-    l_client_t *client = l_calloc(1, sizeof(l_client_t));
+    l_client_t *client = l_calloc(1, sizeof(*client));
 
-    if (uv_tcp_init(&server->loop, &client->handle) == 0) {
-        http_parser_init(&client->parser, HTTP_REQUEST);
-        // set `xxx.data` as a hook
-        client->handle.data = client;
-        client->parser.data = client;
-        client->server = server;
-    } else {
+    if (uv_tcp_init(&server->loop, &client->handle)) {
         L_FREE(client);
         client = NULL;
+    } else {
+        l_http_init(client);
+        client->server = server;
+        client->handle.data = client;
     }
 
     return client;
 }
+
+static void l_on_connection_close(uv_handle_t *client_handle)
+{
+    l_client_t *client = client_handle->data;
+    l_client_reset(client);
+    L_FREE(client);
+}
+
+void l_close_connection(l_client_t *client)
+{
+    uv_close((uv_handle_t *) &client->handle, l_on_connection_close);
+}
+
+
+typedef struct {
+    uv_write_t req;
+    uv_buf_t buf;
+} write_req_t;
 
 
 static l_hitem_t *_hashtbl;
@@ -59,15 +64,14 @@ const char *l_status_code(const char *code)
         HTTP_STATUS_CODE_MAP(XX)
 #undef XX
     }
-
     return l_hget(_hashtbl, code);
 }
 
 char *l_generate_response(l_client_t *client, const char *status_code,
                           l_hitem_t *headers, const char *body)
 {
-    int http_major = client->parser.http_major;
-    int http_minor = client->parser.http_minor;
+    int http_major = client->http.parser.http_major;
+    int http_minor = client->http.parser.http_minor;
     http_major = http_major ? http_major : 1;
     http_minor = http_minor >= 0 ? http_minor : 0;
 

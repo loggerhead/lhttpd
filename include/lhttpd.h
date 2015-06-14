@@ -4,6 +4,13 @@
 #include "http_parser.h"
 #include "uthash.h"
 
+#ifndef TRUE
+# define TRUE  1
+#endif
+#ifndef FALSE
+# define FALSE 0
+#endif
+
 typedef struct _hitem_t l_hitem_t;
 typedef struct _client_t l_client_t;
 typedef struct _server_t l_server_t;
@@ -22,41 +29,41 @@ struct _hitem_t {
 
 struct _client_t {
     uv_tcp_t handle;
-    // DO NOT USE parser.content_length as content-length
-    http_parser parser;
 
-    int is_message_complete;
+    struct {
+        // DO NOT USE parser.content_length as content-length
+        http_parser parser;
 
-    char *url;
-    l_hitem_t *headers;
-    char *body;
-    int content_length;
-    int readed_len;
+        l_hitem_t *headers;
+        char *url;
+        char *body;
+        long content_length;
+        long body_nread;
+        char req_finished;
+    } http;
 
     l_server_t *server;
 };
 
 struct _server_t {
+    uv_tcp_t handle;
+    uv_loop_t loop;
+
     const char *ip;
     int port;
-
-    uv_loop_t loop;
-    uv_tcp_t handle;
-
-    l_on_read_cb on_read_cb;
     l_on_data_cb on_data_cb;
     l_on_request_cb on_request_cb;
 };
 
 // Server
-l_server_t *l_get_server_instance();
+l_server_t *l_create_server();
 void l_set_ip_port(l_server_t *server, const char *ip, int port);
 void l_start_server(l_server_t *server);
 
 // Client
-void l_free_client(l_client_t *client);
-void l_reset_client(l_client_t *client);
-l_client_t *l_get_client_instance(l_server_t *server);
+void l_client_reset(l_client_t *client);
+l_client_t *l_create_client(l_server_t *server);
+void l_close_connection(l_client_t *client);
 
 const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len);
 const char *l_send_response(l_client_t *client, const char *status_code, l_hitem_t *headers, const char *body);
