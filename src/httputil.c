@@ -36,43 +36,40 @@ void l_print_headers(l_hitem_t *headers)
         l_log("%s: %s", header->key, header->value);
 }
 
-void l_convert_parser_method(l_client_t *client)
+l_bool_t l_is_implemented_http_method(l_client_t *client)
 {
-    switch(client->parser.method) {
-        case HTTP_GET:
-        case HTTP_POST:
-        case HTTP_PUT:
-        case HTTP_DELETE:
-        case HTTP_HEAD:
-            client->req.method = CONVERT_PARSER_METHOD(client->parser.method);
-            break;
-        default:
-            client->req.method = L_HTTP_UNKNOWN;
-            break;
+    static l_bool_t _implemented[MAX_HTTP_METHOD_NUM] = { FALSE };
+    if (_implemented[MAX_HTTP_METHOD_NUM-1] == FALSE) {
+        _implemented[MAX_HTTP_METHOD_NUM-1] = TRUE;
+#define XX(method) _implemented[HTTP_ ## method] = TRUE;
+        IMPLEMENTED_HTTP_METHOD_MAP(XX)
+#undef XX
     }
+
+    return _implemented[client->req.method];
 }
 
 l_bool_t l_is_http_get(l_client_t *client)
 {
-    return client->req.method == L_HTTP_GET;
+    return client->req.method == HTTP_GET;
 }
 
 l_bool_t l_is_http_post(l_client_t *client)
 {
-    return client->req.method == L_HTTP_POST;
+    return client->req.method == HTTP_POST;
 }
 
 l_bool_t l_is_http_head(l_client_t *client)
 {
-    return client->req.method == L_HTTP_HEAD;
+    return client->req.method == HTTP_HEAD;
 }
 
 l_bool_t l_is_http_delete(l_client_t *client)
 {
-    return client->req.method == L_HTTP_DELETE;
+    return client->req.method == HTTP_DELETE;
 }
 
 l_bool_t l_is_http_put(l_client_t *client)
 {
-    return client->req.method == L_HTTP_PUT;
+    return client->req.method == HTTP_PUT;
 }

@@ -8,6 +8,7 @@ set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 set (SOURCES ${SOURCES}
         test_httpserver.c
         test_httputil.c
+        test_webrouter.c
         test_util.c)
 
 find_library(LIBUV uv)

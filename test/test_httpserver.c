@@ -3,15 +3,32 @@
 
 #define BODY_LEN 100000
 
+int isnum(const char *str)
+{
+    if (!(str && *str))
+        return 0;
+
+    while ('0' <= *str && *str <= '9')
+        str++;
+
+    return *str == '\0';
+}
+
 const char *on_request(l_client_t *client)
 {
-    char *body = l_malloc(BODY_LEN+1);
-    memset(body, 'F', BODY_LEN);
-    body[BODY_LEN] = '\0';
+    if (l_is_http_post(client) && isnum(client->req.body)) {
+        l_send_code(client, atoi(client->req.body));
+    } else {
+        // 'F' * BODY_LEN
+        char *body = l_malloc(BODY_LEN+1);
+        memset(body, 'F', BODY_LEN);
+        body[BODY_LEN] = '\0';
 
-    l_send_body(client, body);
+        l_send_body(client, body);
 
-    L_FREE(body);
+        L_FREE(body);
+    }
+
     return "";
 }
 

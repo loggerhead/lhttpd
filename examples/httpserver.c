@@ -1,14 +1,18 @@
+#include <stdio.h>
 #include <lhttpd.h>
 
 const char *on_request(l_client_t *client)
 {
-    l_log("==> %s", client->req.url);
-    l_print_headers(client->req.headers);
-    l_log("");
-    if (client->req.method != HTTP_GET)
-        l_log("%.*s\n", 80, client->req.body);
+    l_log("Please input your HTTP response:");
+    char str[2] = {0};
 
-    l_send_body(client, "hello, world");
+    while (1) {
+        int ch = getchar();
+        if (ch == EOF)
+            break;
+        str[0] = ch;
+        l_send_bytes(client, str, 1);
+    }
     return "";
 }
 

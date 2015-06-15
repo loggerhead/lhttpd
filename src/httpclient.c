@@ -54,59 +54,65 @@ typedef struct {
     uv_buf_t buf;
 } write_req_t;
 
-
-const char *l_status_code(int code)
+const char *l_status_code_str(int status_code)
 {
-    static char *_status_codes[1000] = {0};
+    static char *_status_codes[MAX_STATUS_CODE_NUM] = {0};
     if (_status_codes[0] == NULL) {
         _status_codes[0] = "";
 #define XX(code, description) _status_codes[code] = description;
         HTTP_STATUS_CODE_MAP(XX)
 #undef XX
     }
-    return _status_codes[code];
+    return _status_codes[status_code];
 }
 
-char *l_generate_response(l_client_t *client, int status_code,
-                          l_hitem_t *headers, const char *body)
+l_http_response_t l_create_response()
 {
+    l_http_response_t response = {200, NULL, NULL};
+    return response;
+}
+
+char *l_generate_response_str(l_client_t *client, l_http_response_t response)
+{
+    int status_code = response.status_code;
+    l_hitem_t *headers = response.headers;
+    const char *body = response.body;
+
     int http_major = client->parser.http_major;
     int http_minor = client->parser.http_minor;
     http_major = http_major ? http_major : 1;
     http_minor = http_minor >= 0 ? http_minor : 0;
 
     char *tmp = l_mprintf("HTTP/%d.%d %d %s\r\n"
-                          "server: %s/%s",
+                          "server: %d/%s",
                           http_major, http_minor,
-                          status_code, l_status_code(status_code),
+                          status_code, l_status_code_str(status_code),
                           APP_NAME, APP_VERSION);
-    char *response;
+    char *rstr;
 
+#define _RELAY(tmp, rstr) do { L_FREE(tmp); tmp = rstr; } while (0)
     l_hitem_t *h;
     L_HITER(headers, h) {
-        response = l_mprintf("%s\r\n%s: %s", tmp, h->key, h->value);
-        L_FREE(tmp);
-        tmp = response;
+        rstr = l_mprintf("%s\r\n%s: %s", tmp, h->key, h->value);
+        _RELAY(tmp, rstr);
     }
 
-    if (body && *body) {
-        char *content_type = l_get_header(headers, "Content-Type");
-        if (!content_type)
-            content_type = "Content-Type: text/plain; charset=us-ascii";
-
-        response = l_mprintf("%s\r\n"
-                             "%s\r\n"
-                             "Content-Length: %d\r\n"
-                             "\r\n%s",
-                             tmp, content_type, strlen(body), body);
-    } else {
-        response = l_mprintf("%s\r\n\r\n", tmp);
+    if (!l_get_header(headers, "Content-Type")) {
+        rstr = l_mprintf("%s\r\n%s: %s", tmp,
+                         "Content-Type", "text/plain; charset=us-ascii");
+        _RELAY(tmp, rstr);
     }
 
+    if (!body)
+        body = "";
+    rstr = l_mprintf("%s\r\n%s: %d\r\n" "\r\n%s", tmp,
+                     "Content-Length", strlen(body),
+                     body);
     L_FREE(tmp);
-    return response;
-}
+#undef _RELAY
 
+    return rstr;
+}
 
 static void free_write_req(uv_write_t *req, int status)
 {
@@ -129,22 +135,23 @@ const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len)
     return "";
 }
 
-const char *l_send_response(l_client_t *client, int status_code,
-                            l_hitem_t *headers, const char *body)
+const char *l_send_response(l_client_t *client, l_http_response_t response)
 {
-    char *response = l_generate_response(client, status_code, headers, body);
-    const char *errmsg = l_send_bytes(client, response, strlen(response));
-    L_FREE(response);
+    char *rstr = l_generate_response_str(client, response);
+    const char *errmsg = l_send_bytes(client, rstr, strlen(rstr));
+    L_FREE(rstr);
 
     return errmsg;
 }
 
 const char *l_send_code(l_client_t *client, int status_code)
 {
-    return l_send_response(client, status_code, NULL, NULL);
+    l_http_response_t response = { status_code, NULL, NULL };
+    return l_send_response(client, response);
 }
 
 const char *l_send_body(l_client_t *client, const char *body)
 {
-    return l_send_response(client, 200, NULL, body);
+    l_http_response_t response = { 200, NULL, body };
+    return l_send_response(client, response);
 }

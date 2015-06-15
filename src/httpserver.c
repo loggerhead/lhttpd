@@ -76,8 +76,7 @@ static int on_body(http_parser *parser, const char *at, size_t len)
 static int on_message_complete(http_parser *parser)
 {
     l_client_t *client = parser->data;
-    // `parser.method` not support bit operation, so convert it.
-    l_convert_parser_method(client);
+    client->req.method = client->parser.method;
 
     if (client->req.content_length == UNINIT)
         client->req.content_length = 0;
@@ -115,24 +114,21 @@ static int do_http_parse(l_client_t *client, const char *at, size_t len)
     return 0;
 }
 
-
-// TODO: url route, inspired by `bottle`
+// TODO: support custom 404
 static const char *l_server_on_request(l_client_t *client)
 {
-    const char *errmsg = "";
-    switch(client->req.method) {
-        case L_HTTP_GET:
-        case L_HTTP_POST:
-        case L_HTTP_PUT:
-        case L_HTTP_DELETE:
-        case L_HTTP_HEAD:
-            break;
-        default:
-            l_send_code(client, 405);
-            errmsg = "Not implement http method";
+    if (!l_is_implemented_http_method(client)) {
+        l_send_code(client, 405);
+        return "Not implement http method";
     }
 
-    return errmsg;
+    l_match_router_cb call = l_match_router(client->req.url, client->req.method);
+    l_http_response_t response = l_create_response();
+    if (call)
+        response = call(client);
+    else
+        response.status_code = 404;
+    return l_send_response(client, response);
 }
 
 static const char *l_server_on_data(l_client_t *client, const char *buf, ssize_t nread)

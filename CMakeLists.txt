@@ -23,6 +23,7 @@ set (SOURCES ${SOURCES}
         src/httpclient.c
         src/httpserver.c
         src/httputil.c
+        src/webrouter.c
         src/util.c)
 
 set (HEADERS ${HEADERS}

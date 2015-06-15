@@ -6,7 +6,8 @@ project (${NAME}_examples)
 set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
 set (SOURCES ${SOURCES}
-        helloworld.c)
+        helloworld.c
+        httpserver.c)
 
 find_library(LIBTHIS lhttpd)
 if (${LIBTHIS} MATCHES ".*-NOTFOUND")
