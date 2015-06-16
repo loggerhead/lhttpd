@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-06-15 15:26:54
+# @Last Modified time: 2015-06-16 22:57:08
 
 import os
 import json
@@ -78,17 +78,34 @@ class test_httpserver(BaseServerTestCase):
 
 class test_webrouter(BaseServerTestCase):
     def runTest(self):
-        r = requests.get(TEST_URL + "/")
-        assert r.text == "hello world"
+        get = lambda tail: requests.get(TEST_URL + tail)
+        post = lambda tail, data=None: requests.post(TEST_URL + tail, data=data)
 
-        r = requests.get(TEST_URL + "/foo")
-        assert r.status_code == 200 and r.text == "foo"
+        assert get("").text == "static"
+        assert get("/").text == "static"
+        assert get("/static").text == "static"
+        assert get("/static/").text == "static"
+        assert post("/static/test.html", data=TEST_DATA).status_code == 201
+        assert get("/static/test.html").status_code == 404
 
-        r = requests.post(TEST_URL + "/foo", data=TEST_DATA)
-        assert r.status_code == 201
+        assert get("/x").status_code == 200
+        assert get("/x/").status_code == 200
+        assert get("/y/x").status_code == 200
+        assert post("/x/y").status_code == 200
+        assert get("/x/y").status_code == 404
 
-        r = requests.delete(TEST_URL)
-        assert r.status_code == 404
+        assert get("/int/1").status_code == 200
+        assert get("/1/int").status_code == 200
+        assert get("/int/测试").status_code == 404
+
+        assert get("/path/to/good/end").status_code == 200
+        assert post("/path/bad/").status_code == 200
+
+        assert get("/above/1/test").text == "hello world"
+        assert get("/above/1/bar/here").text == "hello world"
+        assert get("/above/1/bar/here?q=value").text == "hello world"
+        assert post("/below/0/bar/there").status_code == 200
+
 
 if __name__ == "__main__":
     unittest.main()

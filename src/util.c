@@ -66,6 +66,20 @@ void *l_realloc(void *ptr, size_t size)
 }
 
 /******************************* String **************************************/
+int l_is_num(const char *str)
+{
+    if (!l_has_str(str))
+        return 0;
+    for (; '0' <= *str && *str <= '9'; str++)
+        ;
+    return *str == '\0';
+}
+
+int l_has_str(const char *str)
+{
+    return (str && *str);
+}
+
 char *l_strdup(const char *s)
 {
     char *t = l_malloc(strlen(s)+1);

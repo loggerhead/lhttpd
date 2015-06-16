@@ -1,3 +1,4 @@
+#include "webrouter.h"
 #include "httpclient.h"
 #include "httpserver.h"
 #include "httputil.h"
@@ -114,7 +115,6 @@ static int do_http_parse(l_client_t *client, const char *at, size_t len)
     return 0;
 }
 
-// TODO: support custom 404
 static const char *l_server_on_request(l_client_t *client)
 {
     if (!l_is_implemented_http_method(client)) {
@@ -122,12 +122,17 @@ static const char *l_server_on_request(l_client_t *client)
         return "Not implement http method";
     }
 
-    l_match_router_cb call = l_match_router(client->req.url, client->req.method);
+    l_route_match_t match = l_match_route(client->req.url, client->req.method);
+
     l_http_response_t response = l_create_response();
-    if (call)
-        response = call(client);
-    else
+    if (match.callback) {
+        response = match.callback(client, match.args);
+        l_free_match(match);
+    // TODO: support custom 404
+    } else {
         response.status_code = 404;
+    }
+
     return l_send_response(client, response);
 }
 
@@ -228,5 +233,6 @@ void l_start_server(l_server_t *server)
     uv_run(&server->loop, UV_RUN_DEFAULT);
     uv_loop_close(&server->loop);
 
+    l_free_routes();
     L_FREE(server);
 }

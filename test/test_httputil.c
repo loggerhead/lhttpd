@@ -32,7 +32,6 @@ static char *HEADERS(char *field)
 int main()
 {
     l_hitem_t *headers = NULL;
-    l_hitem_t *header;
     HEADERS("");
 
     L_HITER(_hashtbl, header) {

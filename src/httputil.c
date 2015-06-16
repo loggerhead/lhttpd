@@ -2,6 +2,7 @@
 #include "util.h"
 
 
+// TODO: remove
 int l_has_error(const char *errmsg)
 {
     return (errmsg && *errmsg);
@@ -17,7 +18,7 @@ char *l_get_header(l_hitem_t *headers, const char *field)
     return l_hget(headers, field);
 }
 
-static void free_header(l_hitem_t *header)
+static void _free_header(l_hitem_t *header)
 {
     L_FREE(header->key);
     L_FREE(header->value);
@@ -25,7 +26,7 @@ static void free_header(l_hitem_t *header)
 
 void l_free_headers(l_hitem_t *headers)
 {
-    l_hfree(headers, free_header);
+    l_hfree(headers, _free_header);
 }
 
 void l_print_headers(l_hitem_t *headers)

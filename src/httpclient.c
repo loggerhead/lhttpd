@@ -91,7 +91,6 @@ char *l_generate_response_str(l_client_t *client, l_http_response_t response)
     char *rstr;
 
 #define _RELAY(tmp, rstr) do { L_FREE(tmp); tmp = rstr; } while (0)
-    l_hitem_t *h;
     L_HITER(headers, h) {
         rstr = l_mprintf("%s\r\n%s: %s", tmp, h->key, h->value);
         _RELAY(tmp, rstr);

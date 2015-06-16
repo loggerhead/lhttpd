@@ -32,7 +32,6 @@ int main()
     hashtbl = l_hput(hashtbl, "key", "value");
     char *value = l_hget(hashtbl, "key");
     assert(!strcmp(value, "value"));
-    l_hitem_t *item = NULL;
     L_HITER(hashtbl, item) {
         assert(!strcmp(item->value, "value"));
     }
