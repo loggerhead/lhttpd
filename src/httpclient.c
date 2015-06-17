@@ -3,7 +3,7 @@
 #include "httputil.h"
 #include "util.h"
 
-static void l_http_init(l_client_t *client)
+static void _http_init(l_client_t *client)
 {
     bzero(&client->req, sizeof(client->req));
     http_parser_init(&client->parser, HTTP_REQUEST);
@@ -17,7 +17,7 @@ void l_client_reset(l_client_t *client)
     L_FREE(client->req.body);
     l_free_headers(client->req.headers);
 
-    l_http_init(client);
+    _http_init(client);
 }
 
 l_client_t *l_create_client(l_server_t *server)
@@ -28,7 +28,7 @@ l_client_t *l_create_client(l_server_t *server)
         L_FREE(client);
         client = NULL;
     } else {
-        l_http_init(client);
+        _http_init(client);
         client->server = server;
         client->handle.data = client;
     }
@@ -36,7 +36,7 @@ l_client_t *l_create_client(l_server_t *server)
     return client;
 }
 
-static void l_on_connection_close(uv_handle_t *client_handle)
+static void _on_connection_close(uv_handle_t *client_handle)
 {
     l_client_t *client = client_handle->data;
     l_client_reset(client);
@@ -45,14 +45,9 @@ static void l_on_connection_close(uv_handle_t *client_handle)
 
 void l_close_connection(l_client_t *client)
 {
-    uv_close((uv_handle_t *) &client->handle, l_on_connection_close);
+    uv_close((uv_handle_t *) &client->handle, _on_connection_close);
 }
 
-
-typedef struct {
-    uv_write_t req;
-    uv_buf_t buf;
-} write_req_t;
 
 const char *l_status_code_str(int status_code)
 {
@@ -113,7 +108,13 @@ char *l_generate_response_str(l_client_t *client, l_http_response_t response)
     return rstr;
 }
 
-static void free_write_req(uv_write_t *req, int status)
+
+typedef struct {
+    uv_write_t req;
+    uv_buf_t buf;
+} write_req_t;
+
+static void _free_write_req(uv_write_t *req, int status)
 {
     if (status < 0) {
         l_warn("send bytes error: %s", uv_strerror(status));
@@ -129,7 +130,7 @@ const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len)
     req->buf = uv_buf_init((char *) l_malloc(len), len);
     memcpy(req->buf.base, bytes, len);
 
-    uv_write((uv_write_t *) req, (uv_stream_t *) &client->handle, &req->buf, 1, free_write_req);
+    uv_write((uv_write_t *) req, (uv_stream_t *) &client->handle, &req->buf, 1, _free_write_req);
 
     return "";
 }

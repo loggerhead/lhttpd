@@ -66,17 +66,17 @@ void l_free_match(l_route_match_t match)
     l_hfree(match.args, _free_args);
 }
 
-static void _l_free_rule(l_hitem_t *item)
+static void _free_rule(l_hitem_t *item)
 {
     L_FREE(item->value);
 }
 
-static void _l_free_routes(l_hitem_t *nodes)
+static void _free_routes(l_hitem_t *nodes)
 {
     L_HITER(nodes, item) {
         l_route_node_t *node = (l_route_node_t *) item->value;
-        _l_free_routes(node->statics);
-        _l_free_routes(node->dynamics);
+        _free_routes(node->statics);
+        _free_routes(node->dynamics);
 
         L_FREE(item->value);
         L_FREE(item->key);
@@ -87,11 +87,11 @@ static void _l_free_routes(l_hitem_t *nodes)
 
 void l_free_routes()
 {
-    l_hfree(_dynamics, _l_free_rule);
+    l_hfree(_dynamics, _free_rule);
 
     for (int i = 0; i < MAX_HTTP_METHOD_NUM; i++) {
-        _l_free_routes(_roots[i].statics);
-        _l_free_routes(_roots[i].dynamics);
+        _free_routes(_roots[i].statics);
+        _free_routes(_roots[i].dynamics);
     }
 }
 
@@ -99,7 +99,7 @@ void l_free_routes()
 /* Extract relative path from url
  * NOTE: need free
  */
-static const char *l_get_relative_url(const char *url)
+static const char *_get_relative_url(const char *url)
 {
     const char *head1 = "http://";
     const char *head2 = "https://";
@@ -121,7 +121,7 @@ static const char *l_get_relative_url(const char *url)
 /* split `<name:filter>` to `name` and `filter` parts
  * NOTE: need free
  */
-static l_dynamic_rule_t *l_create_dynamic_rule(const char *token)
+static l_dynamic_rule_t *_create_dynamic_rule(const char *token)
 {
     l_dynamic_rule_t *rule = l_calloc(1, sizeof(*rule));
     // discard first '<' and last '>'
@@ -149,9 +149,9 @@ static l_dynamic_rule_t *l_create_dynamic_rule(const char *token)
 }
 
 /* split url by '/'. For example, '/hello/world' ==> '/' 'hello' '/' 'world'
- * `l_get_token(token.ptr + token.len)` will parse next token which include '/'
+ * `_get_token(token.ptr + token.len)` will parse next token which include '/'
  */
-static l_token_t l_get_token(const char *url)
+static l_token_t _get_token(const char *url)
 {
     l_token_t token = { url, 0 };
 
@@ -174,7 +174,7 @@ static l_token_t l_get_token(const char *url)
     return token;
 }
 
-static l_bool_t l_is_dynamic_rule(const char *str, int len)
+static l_bool_t _is_dynamic_rule(const char *str, int len)
 {
     return str[0] == '<' && str[len-1] == '>';
 }
@@ -183,7 +183,7 @@ static l_bool_t l_is_dynamic_rule(const char *str, int len)
 // NOTE: need free after server close ==> stoken, nodes (not root in _roots), rule in _dynamics
 void l_add_route(const char *route, l_http_method_t method, l_match_route_cb callback)
 {
-    l_token_t token = l_get_token(route);
+    l_token_t token = _get_token(route);
     if (!token.ptr) {
         l_error("ERROR: Invalid url route!");
         exit(1);
@@ -204,8 +204,8 @@ void l_add_route(const char *route, l_http_method_t method, l_match_route_cb cal
         if (!leaf) {
             leaf = l_calloc(1, sizeof(*leaf));
             // Dynamic route
-            if (l_is_dynamic_rule(token.ptr, token.len)) {
-                l_dynamic_rule_t *rule = l_create_dynamic_rule(stoken);
+            if (_is_dynamic_rule(token.ptr, token.len)) {
+                l_dynamic_rule_t *rule = _create_dynamic_rule(stoken);
                 L_HPUT(_dynamics, stoken, rule);
                 L_HPUT(root->dynamics, stoken, leaf);
             // Static route
@@ -217,16 +217,16 @@ void l_add_route(const char *route, l_http_method_t method, l_match_route_cb cal
         }
 
         root = leaf;
-        token = l_get_token(token.ptr + token.len);
+        token = _get_token(token.ptr + token.len);
     } while (token.ptr && token.len);
 
     leaf->callback = callback;
 }
 
 // NOTE: need free after callback ==> `name` and `stoken` in `args[name] = stoken`
-static l_bool_t _l_match_route(l_route_match_t *match, const char *url, l_route_node_t *root)
+static l_bool_t _match_route(l_route_match_t *match, const char *url, l_route_node_t *root)
 {
-    l_token_t token = l_get_token(url);
+    l_token_t token = _get_token(url);
 
     if (!l_has_str(token.ptr)) {
         match->callback = root->callback;
@@ -240,7 +240,7 @@ static l_bool_t _l_match_route(l_route_match_t *match, const char *url, l_route_
 
     // match statics
     l_route_node_t *child = (l_route_node_t *) l_hget(root->statics, stoken);
-    if (child && _l_match_route(match, remain, child)) {
+    if (child && _match_route(match, remain, child)) {
         L_FREE(stoken);
         goto GOOD_END;
     }
@@ -265,7 +265,7 @@ static l_bool_t _l_match_route(l_route_match_t *match, const char *url, l_route_
                     break;
                 // else Fall down
             case L_FILTER_NULL:
-                if (_l_match_route(match, remain, child))
+                if (_match_route(match, remain, child))
                     _RETURN_AND_SAVE_ARG(stoken);
                 break;
             case L_FILTER_PATH:
@@ -287,11 +287,11 @@ GOOD_END:
 
 l_route_match_t l_match_route(const char *url, l_http_method_t method)
 {
-    url = l_get_relative_url(url);
+    url = _get_relative_url(url);
     l_route_node_t *root = &_roots[method];
     l_route_match_t match = { NULL, NULL };
 
-    url && _l_match_route(&match, url, root);
+    url && _match_route(&match, url, root);
 
     L_FREE(url);
     return match;

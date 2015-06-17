@@ -104,6 +104,7 @@ void l_close_connection(l_client_t *client);
 
 l_http_response_t l_create_response();
 char *l_generate_response_str(l_client_t *client, l_http_response_t response);
+const char *l_status_code_str(int status_code);
 
 /******************************************************************************
 ** Data transmission
@@ -116,9 +117,6 @@ const char *l_send_body(l_client_t *client, const char *body);
 /******************************************************************************
 ** HTTP util
 ******************************************************************************/
-const char *l_status_code_str(int status_code);
-char *l_generate_response_str(l_client_t *client, l_http_response_t response);
-
 l_hitem_t *l_add_header(l_hitem_t *headers, const char *field, const char *value);
 char *l_get_header(l_hitem_t *headers, const char *field);
 void l_free_headers(l_hitem_t *headers);

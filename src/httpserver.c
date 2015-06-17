@@ -5,13 +5,13 @@
 #include "httputil.h"
 #include "util.h"
 
-static void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
+static void _alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
     *buf = uv_buf_init(l_malloc(suggested_size), suggested_size);
 }
 
 // HTTP parse
-static int on_url(http_parser *parser, const char *at, size_t len)
+static int _on_url(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
@@ -19,7 +19,7 @@ static int on_url(http_parser *parser, const char *at, size_t len)
     return 0;
 }
 
-static int on_header_field(http_parser *parser, const char *at, size_t len)
+static int _on_header_field(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
@@ -33,7 +33,7 @@ static int on_header_field(http_parser *parser, const char *at, size_t len)
     return 0;
 }
 
-static int on_header_value(http_parser *parser, const char *at, size_t len)
+static int _on_header_value(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
@@ -52,7 +52,7 @@ static int on_header_value(http_parser *parser, const char *at, size_t len)
     return 0;
 }
 
-static int on_body(http_parser *parser, const char *at, size_t len)
+static int _on_body(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
@@ -75,7 +75,7 @@ static int on_body(http_parser *parser, const char *at, size_t len)
     return 0;
 }
 
-static int on_message_complete(http_parser *parser)
+static int _on_message_complete(http_parser *parser)
 {
     l_client_t *client = parser->data;
     client->req.method = client->parser.method;
@@ -88,26 +88,26 @@ static int on_message_complete(http_parser *parser)
     return 0;
 }
 
-static http_parser_settings *get_http_parser_settings()
+static http_parser_settings *_get_http_parser_settings()
 {
     static http_parser_settings *parser_settings = NULL;
 
     if (parser_settings == NULL) {
         parser_settings = l_calloc(1, sizeof(http_parser_settings));
 
-        parser_settings->on_url = on_url;
-        parser_settings->on_header_field = on_header_field;
-        parser_settings->on_header_value = on_header_value;
-        parser_settings->on_body = on_body;
-        parser_settings->on_message_complete = on_message_complete;
+        parser_settings->on_url = _on_url;
+        parser_settings->on_header_field = _on_header_field;
+        parser_settings->on_header_value = _on_header_value;
+        parser_settings->on_body = _on_body;
+        parser_settings->on_message_complete = _on_message_complete;
     }
 
     return parser_settings;
 }
 
-static int do_http_parse(l_client_t *client, const char *at, size_t len)
+static int _do_http_parse(l_client_t *client, const char *at, size_t len)
 {
-    size_t nparsed = http_parser_execute(&client->parser, get_http_parser_settings(), at, len);
+    size_t nparsed = http_parser_execute(&client->parser, _get_http_parser_settings(), at, len);
 
     if (nparsed != len) {
         l_warn("%s: %s", __func__, http_errno_description(HTTP_PARSER_ERRNO(&client->parser)));
@@ -116,7 +116,7 @@ static int do_http_parse(l_client_t *client, const char *at, size_t len)
     return 0;
 }
 
-static const char *l_server_on_request(l_client_t *client)
+static const char *_server_on_request(l_client_t *client)
 {
     if (!l_is_implemented_http_method(client)) {
         l_send_code(client, 405);
@@ -136,13 +136,13 @@ static const char *l_server_on_request(l_client_t *client)
     return l_send_response(client, response);
 }
 
-static const char *l_server_on_data(l_client_t *client, const char *buf, ssize_t nread)
+static const char *_server_on_data(l_client_t *client, const char *buf, ssize_t nread)
 {
     const char *errmsg = NULL;
 
     l_server_t *server = client->server;
 
-    if (do_http_parse(client, buf, nread)) {
+    if (_do_http_parse(client, buf, nread)) {
         errmsg = "parse HTTP request failed";
         l_client_reset(client);
     } else if (client->req.is_finished) {
@@ -155,7 +155,7 @@ static const char *l_server_on_data(l_client_t *client, const char *buf, ssize_t
     return errmsg;
 }
 
-static void l_server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv_buf_t *buf)
+static void _server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv_buf_t *buf)
 {
     l_client_t *client = client_handle->data;
     l_server_t *server = client->server;
@@ -182,7 +182,7 @@ static void l_server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv
 }
 
 
-static void l_server_on_connect(uv_stream_t *server_handle, int status)
+static void _server_on_connect(uv_stream_t *server_handle, int status)
 {
     l_client_t *client = l_create_client(server_handle->data);
 
@@ -193,7 +193,7 @@ static void l_server_on_connect(uv_stream_t *server_handle, int status)
 
     // accept connection, and `client->handle` is the client end
     if (uv_accept(server_handle, (uv_stream_t *) &client->handle) == 0) {
-        uv_read_start((uv_stream_t *) &client->handle, alloc_buffer, l_server_on_read);
+        uv_read_start((uv_stream_t *) &client->handle, _alloc_buffer, _server_on_read);
     } else {
         l_close_connection(client);
     }
@@ -206,8 +206,8 @@ l_server_t *l_create_server()
     server->port = DEFAULT_PORT;
     server->handle.data = server;
 
-    server->on_data_cb = l_server_on_data;
-    server->on_request_cb = l_server_on_request;
+    server->on_data_cb = _server_on_data;
+    server->on_request_cb = _server_on_request;
 
     return server;
 }
@@ -224,7 +224,7 @@ static l_server_t *_server;
 
 static void _free_server()
 {
-    L_FREE(get_http_parser_settings());
+    L_FREE(_get_http_parser_settings());
     l_free_routes();
     L_FREE(_server);
 }
@@ -240,7 +240,7 @@ void l_start_server(l_server_t *server)
     UV_CHECK(uv_tcp_init(&server->loop, &server->handle));
     UV_CHECK(uv_ip4_addr(server->ip, server->port, &addr));
     UV_CHECK(uv_tcp_bind(&server->handle, (const struct sockaddr *) &addr, 0));
-    UV_CHECK(uv_listen((uv_stream_t *) &server->handle, 128, l_server_on_connect));
+    UV_CHECK(uv_listen((uv_stream_t *) &server->handle, 128, _server_on_connect));
 
     uv_run(&server->loop, UV_RUN_DEFAULT);
 

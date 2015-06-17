@@ -62,7 +62,7 @@ gcc -o foo examples/helloworld.c -llhttpd && ./foo
 ```
 
 #TODO
-* [ ] 简化api (如: remove `l_` if static)，完成API文档
+* [ ] 完成API文档
 * [ ] 支持 `json`
 * [ ] 支持 `redis`/`sqlite`
 * [ ] 处理 `multipart/form-data`/`application/x-www-form-urlencoded`/`application/json`，参考 [四种常见的 POST 提交数据方式](https://www.imququ.com/post/four-ways-to-post-data-in-http.html#toc-2)、[Form-based File Upload in HTML](https://www.ietf.org/rfc/rfc1867.txt)

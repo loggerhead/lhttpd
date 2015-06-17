@@ -8,7 +8,6 @@
 
 #define MAX_STATUS_CODE_NUM 1000
 #define MAX_HTTP_METHOD_NUM 100
-#define MAX_URL_LEN 256
 
 #define UV_CHECK(error)                                     \
     do {                                                    \
