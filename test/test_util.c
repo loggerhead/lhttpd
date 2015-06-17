@@ -29,7 +29,7 @@ int main()
     L_FREE(tmp);
 
     l_hitem_t *hashtbl = NULL;
-    hashtbl = l_hput(hashtbl, "key", "value");
+    L_HPUT(hashtbl, "key", "value");
     char *value = l_hget(hashtbl, "key");
     assert(!strcmp(value, "value"));
     L_HITER(hashtbl, item) {

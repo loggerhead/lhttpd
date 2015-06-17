@@ -3,25 +3,27 @@
 
 **NOTE**: Lhttpd is not thread-safe.
 
-#Dependency
-* [libuv](https://github.com/libuv/libuv)
-* [cmake](http://www.cmake.org/)
+#Build and Install
+##Dependency
+You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/make/) for build, and below libraries for compile.
 
-##Test Dependency
-if you are **linux** user, run `sudo apt-get install python-dev` first.
+* [libuv](https://github.com/libuv/libuv)
+
+If you want run tests, you should run below command.
 
 ```shell
+# Linux user run `sudo apt-get install python-dev` first
 sudo pip install requests grequests
 ```
 
-#Install
+##Install
 Below commands will compile and move files to `/usr/local/lib` and `/usr/local/include`:
 
 ```shell
 ./install.sh
 ```
 
-**NOTE**: If you are linux user, please run beblow commands to update your shared libraries.
+**NOTE**: If you are linux user, please run beblow commands updating your shared libraries for using `lhttpd`.
 
 ```shell
 sudo echo "/usr/local/lib" >> /etc/ld.so.conf
@@ -29,40 +31,12 @@ sudo ldconfig
 ```
 
 #Usage
-See [examples](https://github.com/loggerhead/lhttpd/tree/master/examples).
+Run `./install.sh examples` to compile all examples, see [examples](https://github.com/loggerhead/lhttpd/tree/master/examples) for details. 
 
-```c
-#include <lhttpd.h>
-
-const char *on_request(l_client_t *client)
-{
-    l_log("==> %s", client->url);
-    l_print_headers(client->headers);
-    l_log("");
-    if (client->parser.method != HTTP_GET)
-        l_log("%.*s\n", 80, client->body);
-
-    l_send_body(client, "hello, world");
-    return "";
-}
-
-int main(int argc, char *argv[])
-{
-    l_server_t *server = l_create_server();
-    server->on_request_cb = on_request;
-    l_start_server(server);
-    return 0;
-}
-```
-
-compile and run!
-
-```shell
-gcc -o foo examples/helloworld.c -llhttpd && ./foo
-```
+##API
+You can use everything in [lhttpd.h](https://github.com/loggerhead/lhttpd/blob/master/include/lhttpd.h).
 
 #TODO
-* [ ] 完成API文档
 * [ ] 支持 `json`
 * [ ] 支持 `redis`/`sqlite`
 * [ ] 处理 `multipart/form-data`/`application/x-www-form-urlencoded`/`application/json`，参考 [四种常见的 POST 提交数据方式](https://www.imququ.com/post/four-ways-to-post-data-in-http.html#toc-2)、[Form-based File Upload in HTML](https://www.ietf.org/rfc/rfc1867.txt)

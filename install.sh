@@ -39,6 +39,10 @@ function _test() {
     fi
 }
 
+function _examples() {
+    cd examples && _make && cd ..
+}
+
 function _check() {
     TEST_EXEC=./test_webrouter
 
@@ -64,6 +68,8 @@ elif [[ "$1" == "clean" ]];then
     _clean
 elif [[ "$1" == "test" ]];then
     _test
+elif [[ "$1" == "examples" ]];then
+    _examples
 elif [[ "$1" == "check" ]];then
     _check
 fi

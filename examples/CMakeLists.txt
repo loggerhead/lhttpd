@@ -7,7 +7,8 @@ set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
 set (SOURCES ${SOURCES}
         helloworld.c
-        httpserver.c)
+        route.c
+        tcp_echo.c)
 
 find_library(LIBTHIS lhttpd)
 if (${LIBTHIS} MATCHES ".*-NOTFOUND")
