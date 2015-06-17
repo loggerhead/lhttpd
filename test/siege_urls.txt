@@ -1,0 +1,16 @@
+http://127.0.0.1:9999/
+http://127.0.0.1:9999/static
+http://127.0.0.1:9999/static/
+http://127.0.0.1:9999/static/test.html POST A
+http://127.0.0.1:9999/x
+http://127.0.0.1:9999/x/
+http://127.0.0.1:9999/y/x
+http://127.0.0.1:9999/x/y POST A
+http://127.0.0.1:9999/int/1
+http://127.0.0.1:9999/1/int
+http://127.0.0.1:9999/path/to/good/end
+http://127.0.0.1:9999/path/bad/ POST A
+http://127.0.0.1:9999/above/1/test
+http://127.0.0.1:9999/above/1/bar/here
+http://127.0.0.1:9999/above/1/bar/here?q=value
+http://127.0.0.1:9999/below/0/bar/there POST A

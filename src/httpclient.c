@@ -96,7 +96,7 @@ char *l_generate_response_str(l_client_t *client, l_http_response_t response)
         _RELAY(tmp, rstr);
     }
 
-    if (!l_get_header(headers, "Content-Type")) {
+    if (!l_get_header(headers, "Content-Type") && !l_get_header(headers, "content-type")) {
         rstr = l_mprintf("%s\r\n%s: %s", tmp,
                          "Content-Type", "text/plain; charset=us-ascii");
         _RELAY(tmp, rstr);

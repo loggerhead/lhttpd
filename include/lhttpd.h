@@ -116,8 +116,6 @@ const char *l_send_body(l_client_t *client, const char *body);
 /******************************************************************************
 ** HTTP util
 ******************************************************************************/
-int l_has_error(const char *errmsg);
-
 const char *l_status_code_str(int status_code);
 char *l_generate_response_str(l_client_t *client, l_http_response_t response);
 
@@ -168,8 +166,19 @@ void l_lowercase(char *str);
 ** Hash table
 ******************************************************************************/
 #define L_HITER(hashtbl, item) for(l_hitem_t *item=hashtbl; item; item=item->hh.next)
-#define L_HPUT_ANY(hashtbl, key, value) l_hput(hashtbl, key, (const char *) value)
+/* NOTE: `hashtbl` can NOT be a copy variable, for example:
 
+        void error_example() {
+            l_hitem_t *hashtbl = NULL;
+            l_hitem_t *counterpart = hashtbl;
+            l_hput(hashtbl, "foo", "bar");
+            l_hput(counterpart, "foo", "another");
+            assert(!strcmp(l_hget(hashtbl, "foo"), "bar"));
+        }
+
+ * `value` must be `integer number` or `pointer`, can NOT be `float number` or `struct`
+ */
+#define L_HPUT(hashtbl, key, value) (hashtbl=l_hput(hashtbl, key, (const char *) value))
 l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value);
 char *l_hget(l_hitem_t *hashtbl, const char *key);
 // leave `free_fn` NULL to tell `l_hfree` not free fields

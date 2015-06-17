@@ -25,4 +25,4 @@ install:
     fi
   - sudo pip install requests grequests
 script:
-  - ./install.sh 
+  - ./install.sh && ./install.sh test

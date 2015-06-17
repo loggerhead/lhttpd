@@ -2,12 +2,6 @@
 #include "util.h"
 
 
-// TODO: remove
-int l_has_error(const char *errmsg)
-{
-    return (errmsg && *errmsg);
-}
-
 l_hitem_t *l_add_header(l_hitem_t *headers, const char *field, const char *value)
 {
     return l_hput(headers, field, value);

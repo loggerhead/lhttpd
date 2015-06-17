@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "webrouter.h"
 #include "httpclient.h"
 #include "httpserver.h"
@@ -127,12 +128,11 @@ static const char *l_server_on_request(l_client_t *client)
     l_http_response_t response = l_create_response();
     if (match.callback) {
         response = match.callback(client, match.args);
-        l_free_match(match);
-    // TODO: support custom 404
     } else {
         response.status_code = 404;
     }
 
+    l_free_match(match);
     return l_send_response(client, response);
 }
 
@@ -173,7 +173,7 @@ static void l_server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv
     L_FREE(buf->base);
 
     // close connection if any error or other end closed
-    if (l_has_error(errmsg)) {
+    if (l_has_str(errmsg)) {
         l_warn("%s: %s", __func__, errmsg);
         l_close_connection(client);
     } else if (nread == UV_EOF) {
@@ -220,8 +220,20 @@ void l_set_ip_port(l_server_t *server, const char *ip, int port)
         server->port = port;
 }
 
+static l_server_t *_server;
+
+static void _free_server()
+{
+    L_FREE(get_http_parser_settings());
+    l_free_routes();
+    L_FREE(_server);
+}
+
 void l_start_server(l_server_t *server)
 {
+    _server = server;
+    atexit(_free_server);
+
     struct sockaddr_in addr;
 
     UV_CHECK(uv_loop_init(&server->loop));
@@ -231,8 +243,6 @@ void l_start_server(l_server_t *server)
     UV_CHECK(uv_listen((uv_stream_t *) &server->handle, 128, l_server_on_connect));
 
     uv_run(&server->loop, UV_RUN_DEFAULT);
-    uv_loop_close(&server->loop);
 
-    l_free_routes();
-    L_FREE(server);
+    uv_loop_close(&server->loop);
 }

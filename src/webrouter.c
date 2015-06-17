@@ -35,7 +35,8 @@ do {                                                            \
     }                                                           \
 } while (0)
 
-static void _print_route_nodes(l_route_node_t *node)
+// used for debug
+void _print_route_nodes(l_route_node_t *node)
 {
     int head = 0, tail = 0;
     l_route_node_t *children[1024] = { NULL };
@@ -199,19 +200,20 @@ void l_add_route(const char *route, l_http_method_t method, l_match_route_cb cal
         if (!leaf)
             leaf = (l_route_node_t *) l_hget(root->dynamics, stoken);
 
-        // Add as new node if not exists in tree
+        // Add new node if not exists in tree
         if (!leaf) {
             leaf = l_calloc(1, sizeof(*leaf));
             // Dynamic route
             if (l_is_dynamic_rule(token.ptr, token.len)) {
                 l_dynamic_rule_t *rule = l_create_dynamic_rule(stoken);
-                _dynamics = L_HPUT_ANY(_dynamics, stoken, rule);
-
-                root->dynamics = L_HPUT_ANY(root->dynamics, stoken, leaf);
+                L_HPUT(_dynamics, stoken, rule);
+                L_HPUT(root->dynamics, stoken, leaf);
             // Static route
             } else {
-                root->statics = L_HPUT_ANY(root->statics, stoken, leaf);
+                L_HPUT(root->statics, stoken, leaf);
             }
+        } else {
+            L_FREE(stoken);
         }
 
         root = leaf;
@@ -253,7 +255,7 @@ static l_bool_t _l_match_route(l_route_match_t *match, const char *url, l_route_
 
 #define _RETURN_AND_SAVE_ARG(arg)                              \
         do {                                                   \
-            match->args = L_HPUT_ANY(match->args, name, arg);  \
+            L_HPUT(match->args, name, arg);                    \
             goto GOOD_END;                                     \
         } while (0)
 
