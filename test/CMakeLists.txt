@@ -5,7 +5,6 @@ project (${NAME}_test)
 
 set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
-# file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 set (SOURCES test_httpserver.c
              test_httputil.c
              test_util.c
