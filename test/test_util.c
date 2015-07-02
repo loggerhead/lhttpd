@@ -1,4 +1,4 @@
-#include "../include/lhttpd.h"
+#include "../lhttpd.h"
 #include <stdio.h>
 #include <assert.h>
 

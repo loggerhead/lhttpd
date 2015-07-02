@@ -2,7 +2,6 @@
 
 #include "common.h"
 
-
 #define HTTP_STATUS_CODE_MAP(XX)               \
     XX(100, "Continue")                        \
     XX(101, "Switching Protocols")             \

@@ -1,4 +1,4 @@
-#include "../include/lhttpd.h"
+#include "../lhttpd.h"
 #include <assert.h>
 
 #define BODY_LEN 100000

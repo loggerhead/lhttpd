@@ -1,3 +1,362 @@
+#ifndef CONFIG_H
+
+#define APP_NAME "lhttpd"
+#define APP_VERSION "0.1"
+
+#define DEBUG 1
+#define HAS_SQLITE3 1
+#define HAS_HIREDIS 1
+
+#define DEFAULT_PORT 9999
+
+#define DEFAULT_REDIS_HOST "127.0.0.1"
+#define DEFAULT_REDIS_PORT 6379
+
+#define CONFIG_H
+#endif
+
+/* Copyright Joyent, Inc. and other Node contributors. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+#ifndef http_parser_h
+#define http_parser_h
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Also update SONAME in the Makefile whenever you change these. */
+#define HTTP_PARSER_VERSION_MAJOR 2
+#define HTTP_PARSER_VERSION_MINOR 5
+#define HTTP_PARSER_VERSION_PATCH 0
+
+#include <sys/types.h>
+#if defined(_WIN32) && !defined(__MINGW32__) && (!defined(_MSC_VER) || _MSC_VER<1600)
+#include <BaseTsd.h>
+#include <stddef.h>
+typedef __int8 int8_t;
+typedef unsigned __int8 uint8_t;
+typedef __int16 int16_t;
+typedef unsigned __int16 uint16_t;
+typedef __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#else
+#include <stdint.h>
+#endif
+
+/* Compile with -DHTTP_PARSER_STRICT=0 to make less checks, but run
+ * faster
+ */
+#ifndef HTTP_PARSER_STRICT
+# define HTTP_PARSER_STRICT 1
+#endif
+
+/* Maximium header size allowed. If the macro is not defined
+ * before including this header then the default is used. To
+ * change the maximum header size, define the macro in the build
+ * environment (e.g. -DHTTP_MAX_HEADER_SIZE=<value>). To remove
+ * the effective limit on the size of the header, define the macro
+ * to a very large number (e.g. -DHTTP_MAX_HEADER_SIZE=0x7fffffff)
+ */
+#ifndef HTTP_MAX_HEADER_SIZE
+# define HTTP_MAX_HEADER_SIZE (80*1024)
+#endif
+
+typedef struct http_parser http_parser;
+typedef struct http_parser_settings http_parser_settings;
+
+
+/* Callbacks should return non-zero to indicate an error. The parser will
+ * then halt execution.
+ *
+ * The one exception is on_headers_complete. In a HTTP_RESPONSE parser
+ * returning '1' from on_headers_complete will tell the parser that it
+ * should not expect a body. This is used when receiving a response to a
+ * HEAD request which may contain 'Content-Length' or 'Transfer-Encoding:
+ * chunked' headers that indicate the presence of a body.
+ *
+ * http_data_cb does not return data chunks. It will be called arbitrarily
+ * many times for each string. E.G. you might get 10 callbacks for "on_url"
+ * each providing just a few characters more data.
+ */
+typedef int (*http_data_cb) (http_parser*, const char *at, size_t length);
+typedef int (*http_cb) (http_parser*);
+
+
+/* Request Methods */
+#define HTTP_METHOD_MAP(XX)         \
+  XX(0,  DELETE,      DELETE)       \
+  XX(1,  GET,         GET)          \
+  XX(2,  HEAD,        HEAD)         \
+  XX(3,  POST,        POST)         \
+  XX(4,  PUT,         PUT)          \
+  /* pathological */                \
+  XX(5,  CONNECT,     CONNECT)      \
+  XX(6,  OPTIONS,     OPTIONS)      \
+  XX(7,  TRACE,       TRACE)        \
+  /* webdav */                      \
+  XX(8,  COPY,        COPY)         \
+  XX(9,  LOCK,        LOCK)         \
+  XX(10, MKCOL,       MKCOL)        \
+  XX(11, MOVE,        MOVE)         \
+  XX(12, PROPFIND,    PROPFIND)     \
+  XX(13, PROPPATCH,   PROPPATCH)    \
+  XX(14, SEARCH,      SEARCH)       \
+  XX(15, UNLOCK,      UNLOCK)       \
+  /* subversion */                  \
+  XX(16, REPORT,      REPORT)       \
+  XX(17, MKACTIVITY,  MKACTIVITY)   \
+  XX(18, CHECKOUT,    CHECKOUT)     \
+  XX(19, MERGE,       MERGE)        \
+  /* upnp */                        \
+  XX(20, MSEARCH,     M-SEARCH)     \
+  XX(21, NOTIFY,      NOTIFY)       \
+  XX(22, SUBSCRIBE,   SUBSCRIBE)    \
+  XX(23, UNSUBSCRIBE, UNSUBSCRIBE)  \
+  /* RFC-5789 */                    \
+  XX(24, PATCH,       PATCH)        \
+  XX(25, PURGE,       PURGE)        \
+  /* CalDAV */                      \
+  XX(26, MKCALENDAR,  MKCALENDAR)   \
+
+enum http_method
+  {
+#define XX(num, name, string) HTTP_##name = num,
+  HTTP_METHOD_MAP(XX)
+#undef XX
+  };
+
+
+enum http_parser_type { HTTP_REQUEST, HTTP_RESPONSE, HTTP_BOTH };
+
+
+/* Flag values for http_parser.flags field */
+enum flags
+  { F_CHUNKED               = 1 << 0
+  , F_CONNECTION_KEEP_ALIVE = 1 << 1
+  , F_CONNECTION_CLOSE      = 1 << 2
+  , F_CONNECTION_UPGRADE    = 1 << 3
+  , F_TRAILING              = 1 << 4
+  , F_UPGRADE               = 1 << 5
+  , F_SKIPBODY              = 1 << 6
+  };
+
+
+/* Map for errno-related constants
+ *
+ * The provided argument should be a macro that takes 2 arguments.
+ */
+#define HTTP_ERRNO_MAP(XX)                                           \
+  /* No error */                                                     \
+  XX(OK, "success")                                                  \
+                                                                     \
+  /* Callback-related errors */                                      \
+  XX(CB_message_begin, "the on_message_begin callback failed")       \
+  XX(CB_url, "the on_url callback failed")                           \
+  XX(CB_header_field, "the on_header_field callback failed")         \
+  XX(CB_header_value, "the on_header_value callback failed")         \
+  XX(CB_headers_complete, "the on_headers_complete callback failed") \
+  XX(CB_body, "the on_body callback failed")                         \
+  XX(CB_message_complete, "the on_message_complete callback failed") \
+  XX(CB_status, "the on_status callback failed")                     \
+  XX(CB_chunk_header, "the on_chunk_header callback failed")         \
+  XX(CB_chunk_complete, "the on_chunk_complete callback failed")     \
+                                                                     \
+  /* Parsing-related errors */                                       \
+  XX(INVALID_EOF_STATE, "stream ended at an unexpected time")        \
+  XX(HEADER_OVERFLOW,                                                \
+     "too many header bytes seen; overflow detected")                \
+  XX(CLOSED_CONNECTION,                                              \
+     "data received after completed connection: close message")      \
+  XX(INVALID_VERSION, "invalid HTTP version")                        \
+  XX(INVALID_STATUS, "invalid HTTP status code")                     \
+  XX(INVALID_METHOD, "invalid HTTP method")                          \
+  XX(INVALID_URL, "invalid URL")                                     \
+  XX(INVALID_HOST, "invalid host")                                   \
+  XX(INVALID_PORT, "invalid port")                                   \
+  XX(INVALID_PATH, "invalid path")                                   \
+  XX(INVALID_QUERY_STRING, "invalid query string")                   \
+  XX(INVALID_FRAGMENT, "invalid fragment")                           \
+  XX(LF_EXPECTED, "LF character expected")                           \
+  XX(INVALID_HEADER_TOKEN, "invalid character in header")            \
+  XX(INVALID_CONTENT_LENGTH,                                         \
+     "invalid character in content-length header")                   \
+  XX(INVALID_CHUNK_SIZE,                                             \
+     "invalid character in chunk size header")                       \
+  XX(INVALID_CONSTANT, "invalid constant string")                    \
+  XX(INVALID_INTERNAL_STATE, "encountered unexpected internal state")\
+  XX(STRICT, "strict mode assertion failed")                         \
+  XX(PAUSED, "parser is paused")                                     \
+  XX(UNKNOWN, "an unknown error occurred")
+
+
+/* Define HPE_* values for each errno value above */
+#define HTTP_ERRNO_GEN(n, s) HPE_##n,
+enum http_errno {
+  HTTP_ERRNO_MAP(HTTP_ERRNO_GEN)
+};
+#undef HTTP_ERRNO_GEN
+
+
+/* Get an http_errno value from an http_parser */
+#define HTTP_PARSER_ERRNO(p)            ((enum http_errno) (p)->http_errno)
+
+
+struct http_parser {
+  /** PRIVATE **/
+  unsigned int type : 2;         /* enum http_parser_type */
+  unsigned int flags : 7;        /* F_* values from 'flags' enum; semi-public */
+  unsigned int state : 7;        /* enum state from http_parser.c */
+  unsigned int header_state : 8; /* enum header_state from http_parser.c */
+  unsigned int index : 8;        /* index into current matcher */
+
+  uint32_t nread;          /* # bytes read in various scenarios */
+  uint64_t content_length; /* # bytes in body (0 if no Content-Length header) */
+
+  /** READ-ONLY **/
+  unsigned short http_major;
+  unsigned short http_minor;
+  unsigned int status_code : 16; /* responses only */
+  unsigned int method : 8;       /* requests only */
+  unsigned int http_errno : 7;
+
+  /* 1 = Upgrade header was present and the parser has exited because of that.
+   * 0 = No upgrade header present.
+   * Should be checked when http_parser_execute() returns in addition to
+   * error checking.
+   */
+  unsigned int upgrade : 1;
+
+  /** PUBLIC **/
+  void *data; /* A pointer to get hook to the "connection" or "socket" object */
+};
+
+
+struct http_parser_settings {
+  http_cb      on_message_begin;
+  http_data_cb on_url;
+  http_data_cb on_status;
+  http_data_cb on_header_field;
+  http_data_cb on_header_value;
+  http_cb      on_headers_complete;
+  http_data_cb on_body;
+  http_cb      on_message_complete;
+  /* When on_chunk_header is called, the current chunk length is stored
+   * in parser->content_length.
+   */
+  http_cb      on_chunk_header;
+  http_cb      on_chunk_complete;
+};
+
+
+enum http_parser_url_fields
+  { UF_SCHEMA           = 0
+  , UF_HOST             = 1
+  , UF_PORT             = 2
+  , UF_PATH             = 3
+  , UF_QUERY            = 4
+  , UF_FRAGMENT         = 5
+  , UF_USERINFO         = 6
+  , UF_MAX              = 7
+  };
+
+
+/* Result structure for http_parser_parse_url().
+ *
+ * Callers should index into field_data[] with UF_* values iff field_set
+ * has the relevant (1 << UF_*) bit set. As a courtesy to clients (and
+ * because we probably have padding left over), we convert any port to
+ * a uint16_t.
+ */
+struct http_parser_url {
+  uint16_t field_set;           /* Bitmask of (1 << UF_*) values */
+  uint16_t port;                /* Converted UF_PORT string */
+
+  struct {
+    uint16_t off;               /* Offset into buffer in which field starts */
+    uint16_t len;               /* Length of run in buffer */
+  } field_data[UF_MAX];
+};
+
+
+/* Returns the library version. Bits 16-23 contain the major version number,
+ * bits 8-15 the minor version number and bits 0-7 the patch level.
+ * Usage example:
+ *
+ *   unsigned long version = http_parser_version();
+ *   unsigned major = (version >> 16) & 255;
+ *   unsigned minor = (version >> 8) & 255;
+ *   unsigned patch = version & 255;
+ *   printf("http_parser v%u.%u.%u\n", major, minor, patch);
+ */
+unsigned long http_parser_version(void);
+
+void http_parser_init(http_parser *parser, enum http_parser_type type);
+
+
+/* Initialize http_parser_settings members to 0
+ */
+void http_parser_settings_init(http_parser_settings *settings);
+
+
+/* Executes the parser. Returns number of parsed bytes. Sets
+ * `parser->http_errno` on error. */
+size_t http_parser_execute(http_parser *parser,
+                           const http_parser_settings *settings,
+                           const char *data,
+                           size_t len);
+
+
+/* If http_should_keep_alive() in the on_headers_complete or
+ * on_message_complete callback returns 0, then this should be
+ * the last message on the connection.
+ * If you are the server, respond with the "Connection: close" header.
+ * If you are the client, close the connection.
+ */
+int http_should_keep_alive(const http_parser *parser);
+
+/* Returns a string version of the HTTP method. */
+const char *http_method_str(enum http_method m);
+
+/* Return a string name of the given error */
+const char *http_errno_name(enum http_errno err);
+
+/* Return a string description of the given error */
+const char *http_errno_description(enum http_errno err);
+
+/* Parse a URL; return nonzero on failure */
+int http_parser_parse_url(const char *buf, size_t buflen,
+                          int is_connect,
+                          struct http_parser_url *u);
+
+/* Pause or un-pause the parser; a nonzero value pauses */
+void http_parser_pause(http_parser *parser, int paused);
+
+/* Checks if this is the final chunk of the body. */
+int http_body_is_final(const http_parser *parser);
+
+#ifdef __cplusplus
+}
+#endif
+#endif
 /*
 Copyright (c) 2003-2014, Troy D. Hanson     http://troydhanson.github.com/uthash/
 All rights reserved.
@@ -961,3 +1320,277 @@ typedef struct UT_hash_handle {
 } UT_hash_handle;
 
 #endif /* UTHASH_H */
+/*
+ * This file is used for generating `lhttpd.h` file.
+ */
+#ifndef _LHTTPD_H
+
+#include <stdarg.h>
+#include <uv.h>
+
+/* Variable types */
+typedef enum {
+#ifndef FALSE
+    FALSE,
+#else
+    L_FALSE,
+#endif
+#ifndef TRUE
+    TRUE,
+#else
+    L_TRUE,
+#endif
+} l_bool_t;
+
+typedef enum http_method l_http_method_t;
+
+typedef struct _hitem_t l_hitem_t;
+typedef struct _client_t l_client_t;
+typedef struct _server_t l_server_t;
+typedef struct _http_request_t l_http_request_t;
+typedef struct _http_response_t l_http_response_t;
+typedef struct _route_match_t l_route_match_t;
+
+/* Callable */
+// return error message
+typedef const char * (*l_on_data_cb)    (l_client_t *, const char *, ssize_t);
+typedef const char * (*l_on_request_cb) (l_client_t *);
+typedef l_http_response_t (*l_match_route_cb) (l_client_t *, l_hitem_t *args);
+
+typedef void (*l_hitem_free_fn) (l_hitem_t *item);
+
+/******************************************************************************
+** Routing
+******************************************************************************/
+struct _route_match_t{
+    l_match_route_cb callback;
+    l_hitem_t *args;
+};
+
+void l_add_route(const char *route, l_http_method_t method, l_match_route_cb callback);
+l_route_match_t l_match_route(const char *url, l_http_method_t method);
+
+/******************************************************************************
+** Server
+******************************************************************************/
+struct _server_t {
+    uv_tcp_t handle;
+    uv_loop_t loop;
+    const char *ip;
+    int port;
+    l_on_data_cb on_data_cb;
+    l_on_request_cb on_request_cb;
+};
+
+struct _http_request_t {
+    l_http_method_t method;
+    l_hitem_t *headers;
+    char *url;
+    char *body;
+    long content_length;
+    long body_nread;
+    l_bool_t is_finished;
+};
+
+l_server_t *l_create_server();
+void l_set_ip_port(l_server_t *server, const char *ip, int port);
+void l_start_server(l_server_t *server);
+
+/******************************************************************************
+** Client
+******************************************************************************/
+struct _client_t {
+    uv_tcp_t handle;
+    http_parser parser;
+    l_http_request_t req;
+    l_server_t *server;
+};
+
+struct _http_response_t {
+    int status_code;
+    l_hitem_t *headers;
+    const char *body;
+};
+
+l_client_t *l_create_client(l_server_t *server);
+void l_client_reset(l_client_t *client);
+void l_close_connection(l_client_t *client);
+
+l_http_response_t l_create_response();
+char *l_generate_response_str(l_client_t *client, l_http_response_t response);
+const char *l_status_code_str(int status_code);
+
+/******************************************************************************
+** Data transmission
+******************************************************************************/
+const char *l_send_bytes(l_client_t *client, const char *bytes, size_t len);
+const char *l_send_response(l_client_t *client, l_http_response_t response);
+const char *l_send_code(l_client_t *client, int status_code);
+const char *l_send_body(l_client_t *client, const char *body);
+
+/******************************************************************************
+** HTTP util
+******************************************************************************/
+l_hitem_t *l_add_header(l_hitem_t *headers, const char *field, const char *value);
+char *l_get_header(l_hitem_t *headers, const char *field);
+void l_free_headers(l_hitem_t *headers);
+void l_print_headers(l_hitem_t *headers);
+
+l_bool_t l_is_implemented_http_method(l_client_t *client);
+l_bool_t l_is_http_get(l_client_t *client);
+l_bool_t l_is_http_post(l_client_t *client);
+l_bool_t l_is_http_put(l_client_t *client);
+l_bool_t l_is_http_head(l_client_t *client);
+l_bool_t l_is_http_delete(l_client_t *client);
+
+/******************************************************************************
+** Logging facility
+******************************************************************************/
+#if DEBUG
+# define L_TRACE(...)   l_log("--- %s ---", __func__)
+#else
+# define L_TRACE(...)
+#endif /* DEBUG */
+void l_error(const char *format, ...);
+void l_warn(const char *format, ...);
+void l_log(const char *format, ...);
+
+/******************************************************************************
+** Memory alloc and free
+******************************************************************************/
+#define L_FREE(memory) free((void *) (memory))
+void *l_malloc(size_t size);
+void *l_calloc(size_t count, size_t size);
+void *l_realloc(void *ptr, size_t size);
+
+/******************************************************************************
+** String operation
+******************************************************************************/
+int l_is_num(const char *str);
+int l_has_str(const char *str);
+char *l_mprintf(const char *fmt, ...);
+char *l_strdup(const char *s);
+char *l_strnchr(const char *s, char ch, size_t n);
+void l_repchr(char *str, char old, char new);
+void l_lowercase(char *str);
+
+/******************************************************************************
+** Hash table
+******************************************************************************/
+struct _hitem_t {
+    char *key;
+    char *value;
+    UT_hash_handle hh;
+};
+
+#define L_HITER(hashtbl, item) for(l_hitem_t *item=hashtbl; item; item=item->hh.next)
+/* NOTE: `hashtbl` can NOT be a copy variable, for example:
+
+        void error_example() {
+            l_hitem_t *hashtbl = NULL;
+            l_hitem_t *counterpart = hashtbl;
+            l_hput(hashtbl, "foo", "bar");
+            l_hput(counterpart, "foo", "another");
+            assert(!strcmp(l_hget(hashtbl, "foo"), "bar"));
+        }
+
+ * `value` must be `integer number` or `pointer`, can NOT be `float number` or `struct`
+ */
+#define L_HPUT(hashtbl, key, value) (hashtbl=l_hput(hashtbl, key, (const char *) value))
+l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value);
+char *l_hget(l_hitem_t *hashtbl, const char *key);
+// leave `free_fn` NULL to tell `l_hfree` not free fields
+void l_hfree(l_hitem_t *hashtbl, l_hitem_free_fn free_fn);
+
+/******************************************************************************
+** SQLite 3
+******************************************************************************/
+#if HAS_SQLITE3
+
+#include <sqlite3.h>
+
+typedef struct _query_t l_query_t;
+typedef sqlite3 * l_db_t;
+
+struct _query_t {
+    int row;
+    int col;
+    char **results;
+    l_bool_t is_success;
+};
+
+/* For example, print out first row of query result.
+ *
+ *    l_query_t *query = l_query_db(db, "select * from foo");
+ *    char *key, *val;
+ *    L_DB_FOREACH_COL(query, 0, key, val) {
+ *        printf("%s: %s\n", key, val);
+ *    }
+ */
+#define L_DB_FOREACH_COL(query, row, key, val)                     \
+    for (int k = 0;                                                \
+            ({ if(k < query->col && query->results) {              \
+                key = query->results[k];                           \
+                val = query->results[k + (row + 1) * query->col];  \
+               }; k < query->col; });                              \
+         k++)
+
+/* For example, print out every row of query result.
+ *
+ *    l_query_t *query = l_query_db(db, "select * from foo");
+ *    char *key, *val;
+ *    L_DB_FOREACH_ROW(query, key, val) {
+ *        printf("%s: %s\n", key, val);
+ *    }
+ */
+#define L_DB_FOREACH_ROW(query, key, val)                          \
+    for (int r = 0; query && r < query->row; r++)                  \
+        L_DB_FOREACH_COL(query, r, key, val)
+
+l_db_t l_create_db(const char *dbpath);
+void l_close_db(l_db_t db);
+void l_free_query(l_query_t *query);
+
+/* NOTE: For below functions, an segmentation fault will occurred
+ * when `sqlfmt` not consistent with args. This is a bug of `sqlite3_vmprintf`.
+ * Get more detail from `https://www.sqlite.org/c3ref/mprintf.html`
+ */
+
+l_bool_t l_exec_db(l_db_t db, const char *sqlfmt, ...);
+/* NOTE: result need free by `l_free_query`, for example.
+ *     l_query_t *query = l_query_db(db, 'select 1');
+ *     do_something(query);
+ *     l_free_query(query);
+ */
+l_query_t *l_query_db(l_db_t db, const char *sqlfmt, ...);
+l_bool_t l_is_exist_db(l_db_t db, const char *sqlfmt, ...);
+
+#endif /* HAS_SQLITE3 */
+
+/******************************************************************************
+** Redis
+******************************************************************************/
+#if HAS_HIREDIS
+
+#include <hiredis/hiredis.h>
+
+typedef struct _redis_connection_t l_redis_connection_t;
+typedef enum { L_SYNC, L_ASYNC } l_connection_type_t;
+
+struct _redis_connection_t {
+    redisContext *conn;
+    l_connection_type_t type;
+};
+
+l_redis_connection_t l_create_redis_connection(const char *host, int port);
+void l_close_redis_connection(l_redis_connection_t conn);
+
+void l_redis_set(l_redis_connection_t conn, const char *key, const char *value);
+// NOTE: return value need free
+const char *l_redis_get(l_redis_connection_t conn, const char *key);
+
+#endif /* HAS_HIREDIS */
+
+
+#define _LHTTPD_H
+#endif
