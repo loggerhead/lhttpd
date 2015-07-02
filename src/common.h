@@ -1,7 +1,9 @@
-#ifndef _COMMON_H
+#ifndef L_COMMON_H
 
+#include "../include/config.h"
+#include "../include/http_parser.h"
+#include "../include/uthash.h"
 #include "../include/lhttpd.h"
-#include "../config.h"
 
 #define UNINIT         -1
 #define WAIT_FOR_VALUE -2
@@ -18,5 +20,5 @@
         }                                                   \
     } while (0)
 
-#define _COMMON_H
+#define L_COMMON_H
 #endif

@@ -2,8 +2,15 @@
 
 #cmakedefine APP_NAME "${NAME}"
 #cmakedefine APP_VERSION "${APP_VERSION}"
+
 #cmakedefine DEBUG ${DEBUG}
-#cmakedefine DEFAULT_PORT ${DEFAULT_PORT}
+#cmakedefine HAS_SQLITE3 ${HAS_SQLITE3}
+#cmakedefine HAS_HIREDIS ${HAS_HIREDIS}
+
+#define DEFAULT_PORT 9999
+
+#define DEFAULT_REDIS_HOST "127.0.0.1"
+#define DEFAULT_REDIS_PORT 6379
 
 #define CONFIG_H
 #endif

@@ -1,4 +1,4 @@
-#include "../include/lhttpd.h"
+#include "../lhttpd.h"
 #include <assert.h>
 
 l_http_response_t test_static(l_client_t *client, l_hitem_t *args)

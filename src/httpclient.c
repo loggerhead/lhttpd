@@ -1,4 +1,3 @@
-#include "../config.h"
 #include "httpclient.h"
 #include "httputil.h"
 #include "util.h"

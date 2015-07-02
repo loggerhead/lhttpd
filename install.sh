@@ -14,12 +14,12 @@ function _clean() {
     _cmake_clean test
     _cmake_clean
 
-    rm -f install_manifest.txt
+    rm lhttpd.h include/config.h
+    rm -f install install_manifest.txt
     rm -rf *.dSYM
 
     cd test
-    rm -f *.log
-    rm -f *.pyc
+    rm -f *.log *.pyc *.rdb
     rm -rf *.dSYM
     cd ..
 }
