@@ -7,13 +7,47 @@
 ##Dependency
 You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/make/) for build, and below libraries for compile.
 
-* [libuv](https://github.com/libuv/libuv)
+* Required: [libuv](https://github.com/libuv/libuv);
+* Optional: [sqlite3](https://www.sqlite.org/) for sqlite support;
+* Optional: [redis](https://github.com/antirez/redis) and [hiredis](https://github.com/redis/hiredis) for redis support;
+* Optional: [grequests](https://github.com/kennethreitz/grequests) for test;
+* Optional: [valgrind](http://valgrind.org/) for memory leak check and [siege](https://www.joedog.org/siege-home/) for pressure test;
 
-If you want run tests, you should run below command.
+###libuv
+```shell
+git clone https://github.com/libuv/libuv.git
+cd libuv
+sh autogen.sh && sh autogen.sh
+./configure
+make
+make check
+sudo make install
+```
 
+###sqlite3
+```shell
+sudo apt-get install sqlite3 libsqlite3-dev
+```
+
+###hiredis
+```shell
+git clone https://github.com/redis/hiredis.git
+cd hiredis
+make
+sudo make install
+```
+
+If something error, maybe you need modify `adapters/libuv.h` as follow:
+
+1. add `#include <stdlib.h>` to first line;
+2. find `static int redisLibuvAttach(redisAsyncContext* ac, uv_loop_t* loop)` and delete `static`;
+
+Then, re-compile.
+
+###grequests
 ```shell
 # Linux user run `sudo apt-get install python-dev` first
-sudo pip install requests grequests
+sudo pip install grequests
 ```
 
 ##Install

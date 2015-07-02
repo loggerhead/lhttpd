@@ -38,11 +38,13 @@ HAS_LIBRARY(hiredis)
 
 if (${HAS_SQLITE3})
     set (LINK_LIBS ${LINK_LIBS} sqlite3)
-    set (SOURCES ${SOURCES} src/sqlite.c)
+else()
+    LIST(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/sqlite.c)
 endif()
 if (${HAS_HIREDIS})
     set (LINK_LIBS ${LINK_LIBS} hiredis)
-    set (SOURCES ${SOURCES} src/redis.c)
+else()
+    LIST(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/redis.c)
 endif()
 
 # Compile
