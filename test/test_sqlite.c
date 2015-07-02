@@ -3,6 +3,7 @@
 
 int main(int argc, char *argv[])
 {
+#if HAS_SQLITE3
     const char *text = "hello, world";
 
     l_db_t db = l_create_db("test.db");
@@ -22,6 +23,6 @@ int main(int argc, char *argv[])
     assert(!l_is_exist_db(db, "select * from foo where key = '%q'", text));
 
     l_close_db(db);
-
+#endif
     return 0;
 }

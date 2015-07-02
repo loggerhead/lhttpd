@@ -3,6 +3,7 @@
 
 int main(int argc, char *argv[])
 {
+#if HAS_HIREDIS
     const char *text = "hello, world";
 
     l_redis_connection_t conn = l_create_redis_connection(NULL, 0);
@@ -14,6 +15,6 @@ int main(int argc, char *argv[])
     L_FREE(val);
 
     l_close_redis_connection(conn);
-
+#endif
     return 0;
 }

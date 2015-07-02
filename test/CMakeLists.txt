@@ -5,10 +5,11 @@ project (${NAME}_test)
 
 set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 
-# file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 set (SOURCES test_httpserver.c
              test_httputil.c
              test_util.c
+             test_sqlite.c
+             test_redis.c
              test_webrouter.c)
 
 # Libraries
@@ -34,11 +35,9 @@ HAS_LIBRARY(hiredis)
 
 if (${HAS_SQLITE3})
     set (LINK_LIBS ${LINK_LIBS} sqlite3)
-    set (SOURCES ${SOURCES} test_sqlite.c)
 endif()
 if (${HAS_HIREDIS})
     set (LINK_LIBS ${LINK_LIBS} hiredis)
-    set (SOURCES ${SOURCES} test_redis.c)
 endif()
 
 # Compile and link
