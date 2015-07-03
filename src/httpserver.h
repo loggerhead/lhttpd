@@ -1,6 +1,6 @@
-#ifndef L_HTTP_SERVER_H
+#ifndef _HTTP_SERVER_H
+#define _HTTP_SERVER_H
 
 #include "common.h"
 
-#define L_HTTP_SERVER_H
-#endif
+#endif /* _HTTP_SERVER_H */

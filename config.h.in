@@ -4,6 +4,7 @@
 #cmakedefine APP_VERSION "${APP_VERSION}"
 
 #cmakedefine DEBUG ${DEBUG}
+#cmakedefine HAS_JSON_C  ${HAS_JSON_C}
 #cmakedefine HAS_SQLITE3 ${HAS_SQLITE3}
 #cmakedefine HAS_HIREDIS ${HAS_HIREDIS}
 

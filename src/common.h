@@ -1,4 +1,5 @@
-#ifndef L_COMMON_H
+#ifndef _COMMON_H
+#define _COMMON_H
 
 #include "../include/config.h"
 #include "../include/http_parser.h"
@@ -20,5 +21,4 @@
         }                                                   \
     } while (0)
 
-#define L_COMMON_H
-#endif
+#endif /* _COMMON_H */

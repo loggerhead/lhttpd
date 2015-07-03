@@ -1,4 +1,5 @@
-#ifndef L_UTIL_H
+#ifndef _UTIL_H
+#define _UTIL_H
 
 #include "common.h"
 
@@ -22,5 +23,4 @@
 #define ANSI_BG_CYAN        "\x1b[46m"
 #define ANSI_BG_WHITE       "\x1b[47m"
 
-#define L_UTIL_H
-#endif
+#endif /* _UTIL_H */
