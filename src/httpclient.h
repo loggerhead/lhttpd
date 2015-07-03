@@ -1,4 +1,5 @@
-#ifndef L_HTTP_CLIENT_H
+#ifndef _HTTP_CLIENT_H
+#define _HTTP_CLIENT_H
 
 #include "common.h"
 
@@ -44,5 +45,4 @@
     XX(504, "Gateway Time-out")                \
     XX(505, "HTTP Version not supported")
 
-#define L_HTTP_CLIENT_H
-#endif
+#endif /* _HTTP_CLIENT_H */

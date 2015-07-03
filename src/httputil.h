@@ -1,4 +1,5 @@
-#ifndef L_HTTP_UTIL_H
+#ifndef _HTTP_UTIL_H
+#define _HTTP_UTIL_H
 
 #include "common.h"
 
@@ -9,5 +10,4 @@
     XX(HEAD)                                \
     XX(DELETE)
 
-#define L_HTTP_UTIL_H
-#endif
+#endif /* _HTTP_UTIL_H */

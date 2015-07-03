@@ -1,4 +1,5 @@
-#ifndef L_SQLITE_H
+#ifndef _SQLITE_H
+#define _SQLITE_H
 
 #include "common.h"
 
@@ -12,5 +13,4 @@
 
 #define HAS_QUERY_RESULT(query) (query && query->results && (query->row > 0) && (query->col > 0))
 
-#define L_SQLITE_H
-#endif
+#endif /* _SQLITE_H */

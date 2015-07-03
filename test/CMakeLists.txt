@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.6)
+set (CMAKE_MODULE_PATH "../cmake")
+include(HasLibrary)
+include(info)
 
-set (NAME lhttpd)
 project (${NAME}_test)
 
 set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
@@ -10,6 +12,7 @@ set (SOURCES test_httpserver.c
              test_util.c
              test_sqlite.c
              test_redis.c
+             test_json.c
              test_webrouter.c)
 
 # Libraries
@@ -19,16 +22,6 @@ find_library(HAS_LIBUV uv REQUIRED)
 if (${LIBUV} MATCHES ".*-NOTFOUND")
     message(FATAL_ERROR "Not found libuv")
 endif()
-
-MACRO(HAS_LIBRARY lib)
-    find_library(IS_EXIST_${lib} ${lib})
-    string(TOUPPER ${lib} LIB)
-    IF (${IS_EXIST_${lib}} MATCHES ".*-NOTFOUND")
-        SET(HAS_${LIB} 0)
-    ELSE()
-        SET(HAS_${LIB} 1)
-    ENDIF()
-ENDMACRO(HAS_LIBRARY)
 
 HAS_LIBRARY(sqlite3)
 HAS_LIBRARY(hiredis)
@@ -41,7 +34,6 @@ if (${HAS_HIREDIS})
 endif()
 
 # Compile and link
-message(${SOURCES})
 cmake_policy(SET CMP0015 NEW)
 link_directories(..)
 

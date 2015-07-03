@@ -69,59 +69,51 @@ l_bool_t l_is_exist_db(l_db_t db, const char *sqlfmt, ...)
     return res;
 }
 
-// TODO: finish this
-/*
-json_object *l_get_json_db(l_db_t db, const char *sqlfmt, ...)
+l_json_t *l_query_to_json_object(l_query_t *query)
 {
-    char *sql;
-    SQL_FORMAT(sql, sqlfmt);
+#if HAS_JSON_C
+    if (!HAS_QUERY_RESULT(query))
+        return NULL;
 
-    l_query_t *query = _query_db(db, sql);
-    json_object *jobj = NULL;
+    json_object *jobj = l_create_json_object();
+    const char *key;
+    const char *val;
 
-    if (HAS_QUERY_RESULT(query)) {
-        tCString key;
-        tCString val;
-        jobj = json_object_new_object();
-
-        DB_FOREACH_COL(query, 0, key, val) {
-            json_object *s = json_object_new_string(val ? val : "");
-            json_object_object_add(jobj, key, s);
-        }
+    L_DB_FOREACH_COL(query, 0, key, val) {
+        json_object *tmp = json_object_new_string(val ? val : "");
+        json_object_object_add(jobj, key, tmp);
     }
 
-    sqlite3_free(query);
     return jobj;
+#else
+    l_error("%s: not support json operation", __func__);
+    return NULL;
+#endif
 }
 
-json_object *db_get_json_array(l_db_t db, const char *sqlfmt, ...)
+l_json_t *l_query_to_json_array(l_query_t *query)
 {
-    char *sql;
-    va_list args;
-    va_start(args, sqlfmt);
-    sql = sqlite3_vmprintf(sqlfmt, args);
-    va_end(args);
+#if HAS_JSON_C
+    if (!HAS_QUERY_RESULT(query))
+        return NULL;
 
-    DBDATA *result = _db_get(sql);
-    json_object *jarr = NULL;
+    json_object *array = l_create_json_array();
 
-    if (result && result->results && result->row && result->col) {
-        tCString key;
-        tCString val;
-        jarr = json_object_new_array();
+    L_DB_FOREACH_ROW(query, i) {
+        json_object *jobj = json_object_new_object();
 
-        for (int r = 0; r < result->row; r++) {
-            json_object *jobj = json_object_new_object();
-            DB_FOREACH_COL(result, r, key, val) {
-                json_object_object_add(jobj, key, json_object_new_string(val ? val : ""));
-            }
-            json_object_array_add(jarr, jobj);
+        const char *key;
+        const char *val;
+        L_DB_FOREACH_COL(query, i, key, val) {
+            l_json_add_string(jobj, key, val ? val : "");
         }
+
+        l_array_add_jobj(array, jobj);
     }
 
-    sqlite3_free(result);
-    sqlite3_free(sql);
-
-    return jarr;
+    return array;
+#else
+    l_error("%s: not support json operation", __func__);
+    return NULL;
+#endif
 }
-*/

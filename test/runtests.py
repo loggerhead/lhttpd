@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-07-02 21:49:25
+# @Last Modified time: 2015-07-03 17:43:11
 
 import os
 import json
@@ -31,7 +31,7 @@ def run_test(filename, in_background=False, args=[]):
     if in_background:
         return subprocess.Popen(args, preexec_fn=os.setsid)
     else:
-        return subprocess.call(args)
+        assert 0 == subprocess.call(args)
 
 class BaseTestCase(unittest.TestCase, object):
     def runTest(self):
@@ -60,12 +60,15 @@ class test_httputil(BaseTestCase):
 class test_util(BaseTestCase):
     pass
 
+class test_json(BaseTestCase):
+    pass
+
 class test_sqlite(BaseTestCase):
     pass
 
 class test_redis(BaseTestCase):
     def setUp(self):
-        self.server_process = subprocess.Popen(["redis-server"])
+        self.server_process = subprocess.Popen(["redis-server"], stdout=NULL_OUT)
         time.sleep(0.1)
 
     def tearDown(self):

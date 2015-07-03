@@ -24,6 +24,11 @@ make check
 sudo make install
 ```
 
+###json-c
+```shell
+sudo apt-get install libjson0 libjson0-dev
+```
+
 ###sqlite3
 ```shell
 sudo apt-get install sqlite3 libsqlite3-dev

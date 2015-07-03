@@ -1,6 +1,9 @@
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+**/*.db
+**/*.rdb
+
 *.dSYM/
 
 *.swp

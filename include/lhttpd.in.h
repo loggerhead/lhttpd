@@ -1,7 +1,8 @@
 /*
  * This file is used for generating `lhttpd.h` file.
  */
-#ifndef _LHTTPD_H
+#ifndef L_LHTTPD_H
+#define L_LHTTPD_H
 
 #include <stdarg.h>
 #include <uv.h>
@@ -181,6 +182,53 @@ char *l_hget(l_hitem_t *hashtbl, const char *key);
 void l_hfree(l_hitem_t *hashtbl, l_hitem_free_fn free_fn);
 
 /******************************************************************************
+** JSON
+******************************************************************************/
+#if HAS_JSON_C
+
+#include <json-c/json.h>
+
+typedef struct _json_map_t l_json_map_t;
+typedef json_object l_json_t;
+
+struct _json_map_t {
+    void *var;
+    const char *key;
+    json_type type;
+};
+
+#define L_JSON_MAP_END { NULL, NULL, json_type_null }
+
+void l_json_load(l_json_map_t maps[], json_object *jobj);
+// NOTE: result need free by `l_json_free` if no more need of `maps` variable
+json_object *l_json_loads(l_json_map_t maps[], const char *jstr, size_t len);
+// NOTE: result need free by `l_json_free`
+json_object *l_json_dump(l_json_map_t maps[]);
+// NOTE: return value need free
+const char *l_json_dumps(l_json_map_t maps[]);
+
+json_object *l_create_json_object();
+json_object *l_create_json_array();
+void l_free_json(json_object *jobj);
+const char *l_json_to_string(json_object *jobj);
+
+void l_json_add_string(json_object *jobj, const char *key, const char *val);
+void l_json_add_double(json_object *jobj, const char *key, double val);
+void l_json_add_int(json_object *jobj, const char *key, int val);
+void l_json_add_bool(json_object *jobj, const char *key, l_bool_t val);
+void l_json_add_jobj(json_object *jobj, const char *key, json_object *val);
+
+void l_array_add_string(json_object *jobj, const char *val);
+void l_array_add_double(json_object *jobj, double val);
+void l_array_add_int(json_object *jobj, int val);
+void l_array_add_bool(json_object *jobj, l_bool_t val);
+void l_array_add_jobj(json_object *jobj, json_object *val);
+
+#else
+typedef void l_json_t;
+#endif /* HAS_JSON_C */
+
+/******************************************************************************
 ** SQLite 3
 ******************************************************************************/
 #if HAS_SQLITE3
@@ -217,13 +265,14 @@ struct _query_t {
  *
  *    l_query_t *query = l_query_db(db, "select * from foo");
  *    char *key, *val;
- *    L_DB_FOREACH_ROW(query, key, val) {
- *        printf("%s: %s\n", key, val);
+ *    L_DB_FOREACH_ROW(query, i) {
+ *        L_DB_FOREACH_COL(query, i, key, val) {
+ *            printf("%s: %s\n", key, val);
+ *        }
  *    }
  */
-#define L_DB_FOREACH_ROW(query, key, val)                          \
-    for (int r = 0; query && r < query->row; r++)                  \
-        L_DB_FOREACH_COL(query, r, key, val)
+#define L_DB_FOREACH_ROW(query, i)                          \
+    for (int i = 0; query && i < query->row; i++)
 
 l_db_t l_create_db(const char *dbpath);
 void l_close_db(l_db_t db);
@@ -242,6 +291,9 @@ l_bool_t l_exec_db(l_db_t db, const char *sqlfmt, ...);
  */
 l_query_t *l_query_db(l_db_t db, const char *sqlfmt, ...);
 l_bool_t l_is_exist_db(l_db_t db, const char *sqlfmt, ...);
+
+l_json_t *l_query_to_json_object(l_query_t *query);
+l_json_t *l_query_to_json_array(l_query_t *query);
 
 #endif /* HAS_SQLITE3 */
 
@@ -269,6 +321,5 @@ const char *l_redis_get(l_redis_connection_t conn, const char *key);
 
 #endif /* HAS_HIREDIS */
 
-
-#define _LHTTPD_H
-#endif
+/*****************************************************************************/
+#endif /* L_LHTTPD_H */

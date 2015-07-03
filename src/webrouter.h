@@ -1,4 +1,5 @@
-#ifndef L_WEB_ROUTER_H
+#ifndef _WEB_ROUTER_H
+#define _WEB_ROUTER_H
 
 #include "common.h"
 
@@ -36,5 +37,4 @@ void l_free_routes();
 
 #define NODE_GUARD ""
 
-#define L_WEB_ROUTER_H
-#endif
+#endif /* _WEB_ROUTER_H */
