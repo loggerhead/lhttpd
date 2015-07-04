@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: fz
-# @Date:   2015-05-16 22:28:38
-# @Last Modified by:   fz
-# @Last Modified time: 2015-07-03 22:27:54
 
 import os
 import json
