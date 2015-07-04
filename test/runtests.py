@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: fz
-# @Date:   2015-05-16 22:28:38
-# @Last Modified by:   fz
-# @Last Modified time: 2015-07-03 17:43:11
 
 import os
 import json
@@ -13,6 +9,7 @@ import unittest
 import requests
 import grequests
 import subprocess
+import signal
 
 TEST_PORT = 9998
 TEST_HOST = '127.0.0.1'
@@ -68,11 +65,17 @@ class test_sqlite(BaseTestCase):
 
 class test_redis(BaseTestCase):
     def setUp(self):
-        self.server_process = subprocess.Popen(["redis-server"], stdout=NULL_OUT)
+        try:
+            self.server_process = subprocess.Popen(["redis-server"], stdout=NULL_OUT)
+        except:
+            pass
         time.sleep(0.1)
 
     def tearDown(self):
-        self.server_process.kill()
+        try:
+            self.server_process.kill()
+        except:
+            pass
 
 class test_httpserver(BaseServerTestCase):
     def runTest(self):

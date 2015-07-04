@@ -8,6 +8,7 @@
 You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/make/) for build, and below libraries for compile.
 
 * Required: [libuv](https://github.com/libuv/libuv);
+* Optional: [json-c](https://github.com/json-c/json-c) for json support;
 * Optional: [sqlite3](https://www.sqlite.org/) for sqlite support;
 * Optional: [redis](https://github.com/antirez/redis) and [hiredis](https://github.com/redis/hiredis) for redis support;
 * Optional: [grequests](https://github.com/kennethreitz/grequests) for test;
@@ -32,6 +33,11 @@ sudo apt-get install libjson0 libjson0-dev
 ###sqlite3
 ```shell
 sudo apt-get install sqlite3 libsqlite3-dev
+```
+
+###redis
+```shell
+sudo apt-get install redis-server
 ```
 
 ###hiredis
@@ -65,8 +71,9 @@ Below commands will compile and move files to `/usr/local/lib` and `/usr/local/i
 **NOTE**: If you are linux user, please run beblow commands updating your shared libraries for using `lhttpd`.
 
 ```shell
-sudo echo "/usr/local/lib" >> /etc/ld.so.conf
-sudo ldconfig
+sudo su
+echo "/usr/local/lib" >> /etc/ld.so.conf
+ldconfig
 ```
 
 #Usage
@@ -79,7 +86,6 @@ You can use everything in [lhttpd.in.h](https://github.com/loggerhead/lhttpd/blo
 Inspired by the [bottle](http://bottlepy.org/docs/dev/tutorial.html#request-routing).
 
 #TODO
-* [ ] 支持 `json`
-* [ ] 处理 `multipart/form-data`/`application/x-www-form-urlencoded`/`application/json`，参考 [四种常见的 POST 提交数据方式](https://www.imququ.com/post/four-ways-to-post-data-in-http.html#toc-2)、[Form-based File Upload in HTML](https://www.ietf.org/rfc/rfc1867.txt)
-* [ ] 支持 `Transfer-Encoding`
-* [ ] 支持 `gzip` 等压缩
+* [ ] support `multipart/form-data`/`application/x-www-form-urlencoded`/`application/json`，refer to [四种常见的 POST 提交数据方式](https://www.imququ.com/post/four-ways-to-post-data-in-http.html#toc-2) and [Form-based File Upload in HTML](https://www.ietf.org/rfc/rfc1867.txt).
+* [ ] support `Transfer-Encoding`.
+* [ ] support `gzip` compress.

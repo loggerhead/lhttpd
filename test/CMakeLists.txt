@@ -23,14 +23,21 @@ if (${LIBUV} MATCHES ".*-NOTFOUND")
     message(FATAL_ERROR "Not found libuv")
 endif()
 
+HAS_LIBRARY(json-c JSON_C)
 HAS_LIBRARY(sqlite3)
 HAS_LIBRARY(hiredis)
 
+if (${HAS_JSON_C})
+    set (LINK_LIBS ${LINK_LIBS} json-c)
+    message ("Found json-c, test `src/json.c`")
+endif()
 if (${HAS_SQLITE3})
     set (LINK_LIBS ${LINK_LIBS} sqlite3)
+    message ("Found sqlite3, test `src/sqlite.c`")
 endif()
 if (${HAS_HIREDIS})
     set (LINK_LIBS ${LINK_LIBS} hiredis)
+    message ("Found hiredis, test `src/redis.c`")
 endif()
 
 # Compile and link
