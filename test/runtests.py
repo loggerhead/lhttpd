@@ -3,7 +3,7 @@
 # @Author: fz
 # @Date:   2015-05-16 22:28:38
 # @Last Modified by:   fz
-# @Last Modified time: 2015-07-03 17:43:11
+# @Last Modified time: 2015-07-03 22:27:54
 
 import os
 import json
@@ -66,6 +66,7 @@ class test_json(BaseTestCase):
 class test_sqlite(BaseTestCase):
     pass
 
+# TODO: maybe not has redis; maybe redis is already run
 class test_redis(BaseTestCase):
     def setUp(self):
         self.server_process = subprocess.Popen(["redis-server"], stdout=NULL_OUT)
