@@ -9,6 +9,7 @@ import unittest
 import requests
 import grequests
 import subprocess
+import signal
 
 TEST_PORT = 9998
 TEST_HOST = '127.0.0.1'
@@ -62,14 +63,19 @@ class test_json(BaseTestCase):
 class test_sqlite(BaseTestCase):
     pass
 
-# TODO: maybe not has redis; maybe redis is already run
 class test_redis(BaseTestCase):
     def setUp(self):
-        self.server_process = subprocess.Popen(["redis-server"], stdout=NULL_OUT)
+        try:
+            self.server_process = subprocess.Popen(["redis-server"], stdout=NULL_OUT)
+        except:
+            pass
         time.sleep(0.1)
 
     def tearDown(self):
-        self.server_process.kill()
+        try:
+            self.server_process.kill()
+        except:
+            pass
 
 class test_httpserver(BaseServerTestCase):
     def runTest(self):
