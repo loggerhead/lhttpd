@@ -4,6 +4,21 @@
 **NOTE**: Lhttpd is not thread-safe.
 
 #Build and Install
+##Install
+Below commands will compile and move files to `/usr/local/lib` and `/usr/local/include`:
+
+```shell
+./install.sh
+```
+
+**NOTE**: If you are linux user, please run beblow commands updating your shared libraries for using `lhttpd`.
+
+```shell
+sudo su
+echo "/usr/local/lib" >> /etc/ld.so.conf
+ldconfig
+```
+
 ##Dependency
 You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/make/) for build, and below libraries for compile.
 
@@ -59,21 +74,6 @@ Then, re-compile.
 ```shell
 # Linux user run `sudo apt-get install python-dev` first
 sudo pip install grequests
-```
-
-##Install
-Below commands will compile and move files to `/usr/local/lib` and `/usr/local/include`:
-
-```shell
-./install.sh
-```
-
-**NOTE**: If you are linux user, please run beblow commands updating your shared libraries for using `lhttpd`.
-
-```shell
-sudo su
-echo "/usr/local/lib" >> /etc/ld.so.conf
-ldconfig
 ```
 
 #Usage
