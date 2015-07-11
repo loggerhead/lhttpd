@@ -8,12 +8,16 @@ set (CMAKE_C_FLAGS "-g -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 set (SOURCES ${SOURCES}
         helloworld.c
         route.c
-        tcp_echo.c)
+        tcp_echo.c
+        static_page/main.c)
 
 find_library(LIBTHIS lhttpd)
 if (${LIBTHIS} MATCHES ".*-NOTFOUND")
     message(FATAL_ERROR "Not install lib${NAME}")
 endif()
+
+# Target names should not be reserved and should match a validity pattern.
+cmake_policy(SET CMP0037 NEW)
 
 foreach (SOURCE ${SOURCES})
     string(REPLACE ".c" "" EXEC ${SOURCE})

@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include "util.h"
 
 /******************************** Log ****************************************/
@@ -82,13 +82,6 @@ int l_has_str(const char *str)
     return (str && *str);
 }
 
-char *l_strdup(const char *s)
-{
-    char *t = l_malloc(strlen(s)+1);
-    strcpy(t, s);
-    return t;
-}
-
 char *l_mprintf(const char *fmt, ...)
 {
     va_list args, argscpy;
@@ -141,7 +134,16 @@ void l_lowercase(char *str)
     }
 }
 
-/********************************* HASH **************************************/
+// rewrite this function because I want it never failed.
+char *l_strdup(const char *str)
+{
+    size_t len = strlen(str) + 1;
+    char *copy = l_malloc(len);
+    memcpy(copy, str, len);
+    return copy;
+}
+
+/********************************* Hash **************************************/
 l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value)
 {
     l_hitem_t *item = NULL;
@@ -176,4 +178,154 @@ void l_hfree(l_hitem_t *hashtbl, l_hitem_free_fn free_fn)
             free_fn(item);
         L_FREE(item);
     }
+}
+
+/********************************* File **************************************/
+l_bool_t l_match_file_suffix(const char *filename, const char *suffix)
+{
+    const char *dot = strrchr(filename, '.');
+    return dot && !strcmp(dot + 1, suffix);
+}
+
+l_bool_t l_is_file_exist(const char *path)
+{
+    struct stat s;
+    if (stat(path, &s) == 0)
+        return TRUE;
+    return errno != ENOENT;
+}
+
+size_t l_get_filesize(FILE *fp)
+{
+    struct stat s;
+    fstat(fileno(fp), &s);
+    if (s.st_size == -1)
+        l_error("%s: failed", __func__);
+    return s.st_size;
+}
+
+// NOTE: return value need free
+const char *l_pathcat(const char *dir, const char *filename)
+{
+    size_t len = strlen(dir);
+    char last = *(dir + len - 1);
+    char first = *filename;
+
+    if (last == '/') {
+        if (first == '/')
+            return (const char *) l_mprintf("%s%s", dir, filename+1);
+        else
+            return (const char *) l_mprintf("%s%s", dir, filename);
+    }
+
+    if (*dir) {
+        if (first == '/')
+            return (const char *) l_mprintf("%s%s", dir, filename);
+        else
+            return (const char *) l_mprintf("%s/%s", dir, filename);
+    } else {
+        return l_strdup(filename);
+    }
+}
+
+// NOTE: return value need free by `L_FREE`
+const char *l_url2filename(const char *url)
+{
+    size_t url_len = strlen(url);
+    const char *begin = url;
+    const char *end = strchr(url, '?');
+    const char *tmp = url;
+
+    // end before first '?'
+    end = (end == NULL) ? (url + url_len - 1) : (end - 1);
+    // match "/"
+    if (begin == end && *begin == '/' && *end == '/')
+        return strndup("index.html", 5);
+    // skip all end with '/'
+    while (url < end && *end == '/')
+        end--;
+    // begin after last '/'
+    while (tmp < end)
+    {
+        tmp = strchr(begin, '/');
+        if (tmp == NULL || tmp > end)
+            break;
+        begin = tmp + 1;
+    }
+
+    if (begin > end)
+        return NULL;
+    return strndup(begin, end - begin + 1);
+}
+
+// get the directory component of a pathname
+// NOTE: return value need free by `L_FREE`
+const char *l_get_dirname(const char *filepath)
+{
+    const char *slash = strrchr(filepath, '/');
+    return slash ? strndup(filepath, slash - filepath) : l_strdup("");
+}
+
+// get the final component of a pathname
+const char *l_get_basename(const char *filepath)
+{
+    const char *slash = strrchr(filepath, '/');
+    return slash ? slash + 1 : filepath;
+}
+
+// get the suffix of filename
+const char *l_get_suffix(const char *filename)
+{
+    const char *dot = strrchr(filename, '.');
+    return (!dot || dot == filename) ? "" : dot+1;
+}
+
+/* read file data into memory, return `buf.len` == 0 when failed
+ * NOTE: `buf.data` need free by `L_FREE`
+ */
+l_buf_t l_read_file(const char *filepath)
+{
+    l_buf_t tmp = { NULL, 0 };
+
+    FILE *fp = fopen(filepath, "rb");
+    // if can't read
+    if (!fp)
+        goto RETURN;
+
+    size_t len = l_get_filesize(fp);
+    // if is empty file
+    if (!len)
+        goto RETURN;
+
+    char *data = l_malloc(len);
+    // if can't read into memory
+    if (fread(data, 1, len, fp) != len)
+        goto RETURN;
+
+    tmp.data = data;
+    tmp.len = len;
+
+RETURN:
+    fclose(fp);
+    return tmp;
+}
+
+void l_mkdirs(const char *dir)
+{
+    char *tmp = l_strdup(dir);
+    size_t len = strlen(tmp);
+
+    if (tmp[len-1] == '/')
+        tmp[len-1] = 0;
+
+    for(char *p = tmp + 1; *p; p++)
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, S_IRWXU);
+            *p = '/';
+        }
+
+    mkdir(tmp, S_IRWXU);
+
+    L_FREE(tmp);
 }

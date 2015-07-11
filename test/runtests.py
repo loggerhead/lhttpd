@@ -11,7 +11,7 @@ import grequests
 import subprocess
 import signal
 
-TEST_PORT = 9998
+TEST_PORT = 10000
 TEST_HOST = '127.0.0.1'
 TEST_URL = 'http://%s:%d' % (TEST_HOST, TEST_PORT)
 TEST_DATA = 'A' * (1024**2)

@@ -41,8 +41,13 @@ int main()
     assert(atoi(l_get_header(headers, "Content-length")) == 123);
     assert(!strcmp(l_get_header(headers, "Connection"), "keep-alive"));
     assert(!strcmp(l_get_header(headers, "If-Modified-Since"), "Wed, 19 Nov 2014 03,01,22 GMT"));
-
     l_free_headers(headers);
+
+    assert(!strcmp(l_get_mimetype(".."), "application/octet-stream"));
+    assert(!strcmp(l_get_mimetype(".jpg"), "application/octet-stream"));
+    assert(!strcmp(l_get_mimetype("a.jpg"), "image/jpeg"));
+    assert(!strcmp(l_get_mimetype("a.html"), "text/html"));
+    assert(!strcmp(l_get_mimetype("a.htm"), "text/html"));
 
     return 0;
 }

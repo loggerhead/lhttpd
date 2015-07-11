@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include "webrouter.h"
-#include "httpclient.h"
 #include "httpserver.h"
 #include "httputil.h"
 #include "util.h"

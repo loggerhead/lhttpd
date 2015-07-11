@@ -1,9 +1,10 @@
-/*
+
  * This file is used for generating `lhttpd.h` file.
  */
 #ifndef L_LHTTPD_H
 #define L_LHTTPD_H
 
+#include <stdio.h>
 #include <stdarg.h>
 #include <uv.h>
 
@@ -11,11 +12,13 @@
 typedef enum {
 #ifndef FALSE
     FALSE,
+#define L_FALSE 0
 #else
     L_FALSE,
 #endif
 #ifndef TRUE
     TRUE,
+#define L_TRUE 1
 #else
     L_TRUE,
 #endif
@@ -23,6 +26,7 @@ typedef enum {
 
 typedef enum http_method l_http_method_t;
 
+typedef struct _buf_t l_buf_t;
 typedef struct _hitem_t l_hitem_t;
 typedef struct _client_t l_client_t;
 typedef struct _server_t l_server_t;
@@ -76,7 +80,7 @@ void l_set_ip_port(l_server_t *server, const char *ip, int port);
 void l_start_server(l_server_t *server);
 
 /******************************************************************************
-** Client
+** HTTP util
 ******************************************************************************/
 struct _client_t {
     uv_tcp_t handle;
@@ -89,15 +93,19 @@ struct _http_response_t {
     int status_code;
     l_hitem_t *headers;
     const char *body;
+    size_t body_len;
+    // Does `body` field need free after call `send_response` ?
+    l_bool_t need_free;
+};
+
+struct _buf_t {
+    char *data;
+    size_t len;
 };
 
 l_client_t *l_create_client(l_server_t *server);
 void l_client_reset(l_client_t *client);
 void l_close_connection(l_client_t *client);
-
-l_http_response_t l_create_response();
-char *l_generate_response_str(l_client_t *client, l_http_response_t response);
-const char *l_status_code_str(int status_code);
 
 /******************************************************************************
 ** Data transmission
@@ -108,13 +116,32 @@ const char *l_send_code(l_client_t *client, int status_code);
 const char *l_send_body(l_client_t *client, const char *body);
 
 /******************************************************************************
-** HTTP util
+** HTTP response
 ******************************************************************************/
+l_http_response_t l_create_response();
+l_http_response_t l_create_redirect_response(const char *url);
+/*
+ * Create response from static file.
+ * NOTE: filepath can't containing "..", otherwise, 404 will be returned.
+ */
+l_http_response_t l_create_response_by_file(const char *filepath);
+l_buf_t l_generate_response_data(l_client_t *client, l_http_response_t response);
+const char *l_status_code_str(int status_code);
+
+#define L_ADD_HEADER(headers, field, value) \
+    do { L_HPUT(headers, field, value); } while (0)
+
+// TODO: `l_add_header` should alloc memory every time
 l_hitem_t *l_add_header(l_hitem_t *headers, const char *field, const char *value);
 char *l_get_header(l_hitem_t *headers, const char *field);
 void l_free_headers(l_hitem_t *headers);
 void l_print_headers(l_hitem_t *headers);
 
+const char *l_get_mimetype(const char *filepath);
+
+/******************************************************************************
+** HTTP request
+******************************************************************************/
 l_bool_t l_is_implemented_http_method(l_client_t *client);
 l_bool_t l_is_http_get(l_client_t *client);
 l_bool_t l_is_http_post(l_client_t *client);
@@ -154,6 +181,30 @@ void l_repchr(char *str, char old, char new);
 void l_lowercase(char *str);
 
 /******************************************************************************
+** File operation
+******************************************************************************/
+l_bool_t l_match_file_suffix(const char *filename, const char *suffix);
+l_bool_t l_is_file_exist(const char *path);
+size_t l_get_filesize(FILE *fp);
+// NOTE: return value need free
+const char *l_pathcat(const char *dir, const char *filename);
+// NOTE: return value need free by `L_FREE`
+const char *l_url2filename(const char *url);
+/* get the directory component of a pathname
+ * NOTE: return value need free by `L_FREE`
+ */
+const char *l_get_dirname(const char *filepath);
+// get the final component of a pathname
+const char *l_get_basename(const char *filepath);
+// get the suffix of filename
+const char *l_get_suffix(const char *filename);
+/* read file data into memory, return `buf.len` == 0 when failed
+ * NOTE: `buf.data` need free by `L_FREE`
+ */
+l_buf_t l_read_file(const char *filepath);
+void l_mkdirs(const char *dir);
+
+/******************************************************************************
 ** Hash table
 ******************************************************************************/
 struct _hitem_t {
@@ -175,7 +226,9 @@ struct _hitem_t {
 
  * `value` must be `integer number` or `pointer`, can NOT be `float number` or `struct`
  */
-#define L_HPUT(hashtbl, key, value) (hashtbl=l_hput(hashtbl, key, (const char *) value))
+#define L_HPUT(hashtbl, key, value) \
+    do { hashtbl=l_hput(hashtbl, key, (const char *) value); } while (0)
+// TODO: `l_hput` should alloc memory every time
 l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value);
 char *l_hget(l_hitem_t *hashtbl, const char *key);
 // leave `free_fn` NULL to tell `l_hfree` not free fields
@@ -322,4 +375,4 @@ const char *l_redis_get(l_redis_connection_t conn, const char *key);
 #endif /* HAS_HIREDIS */
 
 /*****************************************************************************/
-#endif /* L_LHTTPD_H */
+#endif /* L_LHTTPD_H

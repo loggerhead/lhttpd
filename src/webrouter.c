@@ -291,7 +291,8 @@ l_route_match_t l_match_route(const char *url, l_http_method_t method)
     l_route_node_t *root = &_roots[method];
     l_route_match_t match = { NULL, NULL };
 
-    url && _match_route(&match, url, root);
+    if (url)
+        _match_route(&match, url, root);
 
     L_FREE(url);
     return match;
