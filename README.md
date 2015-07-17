@@ -31,12 +31,12 @@ ldconfig
 ##Dependency
 You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/make/) for build, and below libraries for compile.
 
-* Required: [libuv](https://github.com/libuv/libuv);
-* Optional: [json-c](https://github.com/json-c/json-c) for json support;
-* Optional: [sqlite3](https://www.sqlite.org/) for sqlite support;
-* Optional: [redis](https://github.com/antirez/redis) and [hiredis](https://github.com/redis/hiredis) for redis support;
-* Optional: [grequests](https://github.com/kennethreitz/grequests) for test;
-* Optional: [valgrind](http://valgrind.org/) for memory leak check and [siege](https://www.joedog.org/siege-home/) for pressure test;
+* Required: [libuv](https://github.com/libuv/libuv).
+* Optional: [json-c](https://github.com/json-c/json-c) for json support.
+* Optional: [sqlite3](https://www.sqlite.org/) for sqlite support.
+* Optional: [redis](https://github.com/antirez/redis) and [hiredis](https://github.com/redis/hiredis) for redis support.
+* Optional: [grequests](https://github.com/kennethreitz/grequests) for test.
+* Optional: [valgrind](http://valgrind.org/) for memory leak check and [siege](https://www.joedog.org/siege-home/) for pressure test.
 
 ###Required
 ```shell
