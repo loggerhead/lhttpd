@@ -1,4 +1,4 @@
-
+/*
  * This file is used for generating `lhttpd.h` file.
  */
 #ifndef L_LHTTPD_H
@@ -375,4 +375,4 @@ const char *l_redis_get(l_redis_connection_t conn, const char *key);
 #endif /* HAS_HIREDIS */
 
 /*****************************************************************************/
-#endif /* L_LHTTPD_H
+#endif /* L_LHTTPD_H */

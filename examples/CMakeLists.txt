@@ -16,8 +16,7 @@ if (${LIBTHIS} MATCHES ".*-NOTFOUND")
     message(FATAL_ERROR "Not install lib${NAME}")
 endif()
 
-# Target names should not be reserved and should match a validity pattern.
-cmake_policy(SET CMP0037 NEW)
+cmake_policy(SET CMP0037 OLD)
 
 foreach (SOURCE ${SOURCES})
     string(REPLACE ".c" "" EXEC ${SOURCE})

@@ -13,7 +13,7 @@ import signal
 
 TEST_PORT = 10000
 TEST_HOST = '127.0.0.1'
-TEST_URL = 'http://%s:%d' % (TEST_HOST, TEST_PORT)
+TEST_URL  = 'http://%s:%d' % (TEST_HOST, TEST_PORT)
 TEST_DATA = 'A' * (1024**2)
 
 NULL_OUT = open("/dev/null","wb")
@@ -43,6 +43,7 @@ class BaseServerTestCase(unittest.TestCase, object):
         testname = type(self).__name__
         if testname in BaseServerTestCase.__name__:
             return
+        self.name = testname
 
         self.server_process = run_test(testname, in_background=True, args=[TEST_HOST, TEST_PORT])
         time.sleep(0.1)
@@ -51,8 +52,17 @@ class BaseServerTestCase(unittest.TestCase, object):
         self.server_process.kill()
 
 
-class test_httputil(BaseTestCase):
-    pass
+class test_httputil(BaseServerTestCase):
+    def runTest(self):
+        get = lambda tail: requests.get(TEST_URL + tail, allow_redirects=False)
+
+        assert get("/test/send_bytes").status_code == 200
+        assert get("/test/send_response").status_code == 200
+        assert get("/test/send_code").status_code == 204
+        assert get("/test/send_body").text == "test"
+
+        assert get("/test/redirect").status_code == 301
+        assert get("/test/static_file").text == open(self.name + '.c').read()
 
 class test_util(BaseTestCase):
     pass
