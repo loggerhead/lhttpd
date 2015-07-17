@@ -30,8 +30,7 @@ install:
       cd hiredis;
       make;
       sudo make install;
-    elif [ $TRAVIS_OS_NAME = osx ]; then
-      brew install --HEAD libuv;
+      cd ..;
     fi
   - sudo pip install grequests
 script:
