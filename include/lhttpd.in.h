@@ -45,7 +45,7 @@ typedef void (*l_hitem_free_fn) (l_hitem_t *item);
 /******************************************************************************
 ** Routing
 ******************************************************************************/
-struct _route_match_t{
+struct _route_match_t {
     l_match_route_cb callback;
     l_hitem_t *args;
 };
@@ -213,7 +213,8 @@ struct _hitem_t {
     UT_hash_handle hh;
 };
 
-#define L_HITER(hashtbl, item) for(l_hitem_t *item=hashtbl; item; item=item->hh.next)
+#define L_HITER(hashtbl, item) \
+    for(l_hitem_t *item=hashtbl; item; item=item->hh.next)
 /* NOTE: `hashtbl` can NOT be a copy variable, for example:
 
         void error_example() {
@@ -252,30 +253,30 @@ struct _json_map_t {
 
 #define L_JSON_MAP_END { NULL, NULL, json_type_null }
 
-void l_json_load(l_json_map_t maps[], json_object *jobj);
+void l_json_load(l_json_map_t maps[], l_json_t *jobj);
 // NOTE: result need free by `l_json_free` if no more need of `maps` variable
-json_object *l_json_loads(l_json_map_t maps[], const char *jstr, size_t len);
+l_json_t *l_json_loads(l_json_map_t maps[], const char *jstr, size_t len);
 // NOTE: result need free by `l_json_free`
-json_object *l_json_dump(l_json_map_t maps[]);
+l_json_t *l_json_dump(l_json_map_t maps[]);
 // NOTE: return value need free
 const char *l_json_dumps(l_json_map_t maps[]);
 
-json_object *l_create_json_object();
-json_object *l_create_json_array();
-void l_free_json(json_object *jobj);
-const char *l_json_to_string(json_object *jobj);
+l_json_t *l_create_json_object();
+l_json_t *l_create_json_array();
+void l_free_json(l_json_t *jobj);
+const char *l_json_to_string(l_json_t *jobj);
 
-void l_json_add_string(json_object *jobj, const char *key, const char *val);
-void l_json_add_double(json_object *jobj, const char *key, double val);
-void l_json_add_int(json_object *jobj, const char *key, int val);
-void l_json_add_bool(json_object *jobj, const char *key, l_bool_t val);
-void l_json_add_jobj(json_object *jobj, const char *key, json_object *val);
+void l_json_add_string(l_json_t *jobj, const char *key, const char *val);
+void l_json_add_double(l_json_t *jobj, const char *key, double val);
+void l_json_add_int(l_json_t *jobj, const char *key, int val);
+void l_json_add_bool(l_json_t *jobj, const char *key, l_bool_t val);
+void l_json_add_jobj(l_json_t *jobj, const char *key, l_json_t *val);
 
-void l_array_add_string(json_object *jobj, const char *val);
-void l_array_add_double(json_object *jobj, double val);
-void l_array_add_int(json_object *jobj, int val);
-void l_array_add_bool(json_object *jobj, l_bool_t val);
-void l_array_add_jobj(json_object *jobj, json_object *val);
+void l_array_add_string(l_json_t *jobj, const char *val);
+void l_array_add_double(l_json_t *jobj, double val);
+void l_array_add_int(l_json_t *jobj, int val);
+void l_array_add_bool(l_json_t *jobj, l_bool_t val);
+void l_array_add_jobj(l_json_t *jobj, l_json_t *val);
 
 #else
 typedef void l_json_t;

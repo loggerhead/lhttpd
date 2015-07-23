@@ -1,13 +1,13 @@
 #include "json.h"
 
-static void _load_json_object(l_json_map_t maps[], json_object *jobj)
+static void _load_json_object(l_json_map_t maps[], l_json_t *jobj)
 {
     struct json_object_iterator begin = json_object_iter_begin(jobj);
     struct json_object_iterator end   = json_object_iter_end(jobj);
 
     for (; !json_object_iter_equal(&begin, &end); json_object_iter_next(&begin)) {
         const char *key = json_object_iter_peek_name(&begin);
-        json_object *val = json_object_iter_peek_value(&begin);
+        l_json_t *val = json_object_iter_peek_value(&begin);
 
         for (int i = 0; maps[i].key; i++) {
             l_json_map_t map = maps[i];
@@ -29,7 +29,7 @@ static void _load_json_object(l_json_map_t maps[], json_object *jobj)
                     *(const char **) map.var = json_object_get_string(val);
                     break;
                 case json_type_object:
-                    *(json_object **)map.var = val;
+                    *(l_json_t **)map.var = val;
                     break;
                 case json_type_array:
                     *(array_list **) map.var = json_object_get_array(val);
@@ -43,7 +43,7 @@ static void _load_json_object(l_json_map_t maps[], json_object *jobj)
     }
 }
 
-static void _load_json_array(l_json_map_t maps[], json_object *jobj)
+static void _load_json_array(l_json_map_t maps[], l_json_t *jobj)
 {
     int len = json_object_array_length(jobj);
     for (int i = 0; i < len; i++) {
@@ -51,7 +51,7 @@ static void _load_json_array(l_json_map_t maps[], json_object *jobj)
     }
 }
 
-void l_json_load(l_json_map_t maps[], json_object *jobj)
+void l_json_load(l_json_map_t maps[], l_json_t *jobj)
 {
     switch (json_object_get_type(jobj)) {
         case json_type_boolean:
@@ -79,10 +79,10 @@ void l_json_load(l_json_map_t maps[], json_object *jobj)
 }
 
 // NOTE: result need free by `l_json_free` if no more need of `maps` variable
-json_object *l_json_loads(l_json_map_t maps[], const char *jstr, size_t len)
+l_json_t *l_json_loads(l_json_map_t maps[], const char *jstr, size_t len)
 {
     json_tokener *tok = json_tokener_new();
-    json_object *jobj = json_tokener_parse_ex(tok, jstr, len);
+    l_json_t *jobj = json_tokener_parse_ex(tok, jstr, len);
 
     if (json_tokener_get_error(tok) == json_tokener_success) {
         l_json_load(maps, jobj);
@@ -95,13 +95,13 @@ json_object *l_json_loads(l_json_map_t maps[], const char *jstr, size_t len)
 }
 
 // NOTE: result need free by `l_json_free`
-json_object *l_json_dump(l_json_map_t maps[])
+l_json_t *l_json_dump(l_json_map_t maps[])
 {
-    json_object *jobj = json_object_new_object();
+    l_json_t *jobj = json_object_new_object();
 
     for (int i = 0; maps[i].key; i++) {
         l_json_map_t map = maps[i];
-        json_object *val = NULL;
+        l_json_t *val = NULL;
 
         switch (map.type) {
             case json_type_boolean:
@@ -118,7 +118,7 @@ json_object *l_json_dump(l_json_map_t maps[])
                 break;
             case json_type_object: // fall though
             case json_type_array:
-                val = *(json_object **)map.var;
+                val = *(l_json_t **)map.var;
                 break;
             default:
                 l_warn("%s: unknown json type", __func__);
@@ -134,81 +134,81 @@ json_object *l_json_dump(l_json_map_t maps[])
 // NOTE: return value need free
 const char *l_json_dumps(l_json_map_t maps[])
 {
-    json_object *jobj = l_json_dump(maps);
+    l_json_t *jobj = l_json_dump(maps);
     const char *jstr = strdup(json_object_to_json_string(jobj));
     l_free_json(jobj);
     return jstr;
 }
 
 
-json_object *l_create_json_object()
+l_json_t *l_create_json_object()
 {
     return json_object_new_object();
 }
 
-json_object *l_create_json_array()
+l_json_t *l_create_json_array()
 {
     return json_object_new_array();
 }
 
-void l_free_json(json_object *jobj)
+void l_free_json(l_json_t *jobj)
 {
     json_object_put(jobj);
 }
 
-const char *l_json_to_string(json_object *jobj)
+const char *l_json_to_string(l_json_t *jobj)
 {
     return json_object_to_json_string(jobj);
 }
 
 
-void l_json_add_string(json_object *jobj, const char *key, const char *val)
+void l_json_add_string(l_json_t *jobj, const char *key, const char *val)
 {
     json_object_object_add(jobj, key, json_object_new_string(val));
 }
 
-void l_json_add_double(json_object *jobj, const char *key, double val)
+void l_json_add_double(l_json_t *jobj, const char *key, double val)
 {
     json_object_object_add(jobj, key, json_object_new_double(val));
 }
 
-void l_json_add_int(json_object *jobj, const char *key, int val)
+void l_json_add_int(l_json_t *jobj, const char *key, int val)
 {
     json_object_object_add(jobj, key, json_object_new_int(val));
 }
 
-void l_json_add_bool(json_object *jobj, const char *key, l_bool_t val)
+void l_json_add_bool(l_json_t *jobj, const char *key, l_bool_t val)
 {
     json_object_object_add(jobj, key, json_object_new_boolean(val));
 }
 
-void l_json_add_jobj(json_object *jobj, const char *key, json_object *val)
+void l_json_add_jobj(l_json_t *jobj, const char *key, l_json_t *val)
 {
     json_object_object_add(jobj, key, val);
 }
 
 
-void l_array_add_string(json_object *jobj, const char *val)
+void l_array_add_string(l_json_t *jobj, const char *val)
 {
     json_object_array_add(jobj, json_object_new_string(val));
 }
 
-void l_array_add_double(json_object *jobj, double val)
+void l_array_add_double(l_json_t *jobj, double val)
 {
     json_object_array_add(jobj, json_object_new_double(val));
 }
 
-void l_array_add_int(json_object *jobj, int val)
+void l_array_add_int(l_json_t *jobj, int val)
 {
     json_object_array_add(jobj, json_object_new_int(val));
 }
 
-void l_array_add_bool(json_object *jobj, l_bool_t val)
+void l_array_add_bool(l_json_t *jobj, l_bool_t val)
 {
     json_object_array_add(jobj, json_object_new_boolean(val));
 }
 
-void l_array_add_jobj(json_object *jobj, json_object *val)
+void l_array_add_jobj(l_json_t *jobj, l_json_t *val)
 {
     json_object_array_add(jobj, val);
 }

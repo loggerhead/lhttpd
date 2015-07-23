@@ -75,12 +75,12 @@ l_json_t *l_query_to_json_object(l_query_t *query)
     if (!HAS_QUERY_RESULT(query))
         return NULL;
 
-    json_object *jobj = l_create_json_object();
+    l_json_t *jobj = l_create_json_object();
     const char *key;
     const char *val;
 
     L_DB_FOREACH_COL(query, 0, key, val) {
-        json_object *tmp = json_object_new_string(val ? val : "");
+        l_json_t *tmp = json_object_new_string(val ? val : "");
         json_object_object_add(jobj, key, tmp);
     }
 
@@ -97,10 +97,10 @@ l_json_t *l_query_to_json_array(l_query_t *query)
     if (!HAS_QUERY_RESULT(query))
         return NULL;
 
-    json_object *array = l_create_json_array();
+    l_json_t *array = l_create_json_array();
 
     L_DB_FOREACH_ROW(query, i) {
-        json_object *jobj = json_object_new_object();
+        l_json_t *jobj = json_object_new_object();
 
         const char *key;
         const char *val;

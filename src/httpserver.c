@@ -38,6 +38,7 @@ static int _on_header_value(http_parser *parser, const char *at, size_t len)
 
     const char *value = strndup(at, len);
 
+    // TODO: raise 413 error when content_length > 102400
     if (client->req.content_length == WAIT_FOR_VALUE)
         client->req.content_length = atoi(value);
 
