@@ -1,53 +1,97 @@
+/* TODO: finish chunk
+ * When on_chunk_header is called, the current chunk length is stored in parser->content_length.
+ *   `static int _on_chunk_header(http_parser *parser)`
+ *   `static int _on_chunk_complete(http_parser *parser)`
+ */
+
 #include <stdlib.h>
 #include "server.h"
 #include "webrouter.h"
 #include "httputil.h"
 #include "util.h"
 
+
 static void _alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
     *buf = uv_buf_init(l_malloc(suggested_size), suggested_size);
 }
 
-// HTTP parse
+
 static int _on_url(http_parser *parser, const char *at, size_t len)
 {
+    int err = 0;
     l_client_t *client = parser->data;
+    client->request.url = strndup(at, len);
 
-    client->req.url = strndup(at, len);
-    return 0;
+    _(http_parser_parse_url(at, len, 0, &client->request.parsed_url));
+    struct http_parser_url u = client->request.parsed_url;
+
+    int schema_len = u.field_data[UF_SCHEMA].len;
+    if (schema_len) {
+        _(schema_len != 4);
+        _(strncmp("http", at + u.field_data[UF_SCHEMA].off, 4));
+    }
+
+END:;
+    return err;
 }
 
 static int _on_header_field(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
-
-    const char *field = strndup(at, len);
-
-    client->req.headers = l_add_header(client->req.headers, field, NULL);
-
-    if (!strcasecmp("content-length", field))
-        client->req.content_length = WAIT_FOR_VALUE;
-
+    client->request.hook = strndup(at, len);
     return 0;
 }
 
+// NOTE: not support multiple values for one field
 static int _on_header_value(http_parser *parser, const char *at, size_t len)
 {
+    int err = 0;
     l_client_t *client = parser->data;
-
+    l_server_t *server = client->server;
+    const char *field = client->request.hook;
     const char *value = strndup(at, len);
 
-    // TODO: raise 413 error when content_length > 102400
-    if (client->req.content_length == WAIT_FOR_VALUE)
-        client->req.content_length = atoi(value);
+    if (l_is_strcaseeq("content-length", field)) {
+        long content_length = strtol(value, NULL, 10);
+        client->request.content_length = content_length;
 
-    for (l_hitem_t *h = client->req.headers; h; h = h->hh.next) {
-        if (h->value == NULL) {
-            client->req.headers = l_add_header(client->req.headers, h->key, value);
-            break;
+        if (content_length > server->max_content_length) {
+            client->response.status_code = 413;
+            err = 1;
         }
+    } else if (l_is_strcaseeq("Expect", field)) {
+        if (l_is_strcaseeq("100-continue", value))
+            client->response.status_code = 100;
+    } else {
+        L_PUT_HEADER(client->request.headers, field, value);
     }
+
+    L_FREE(field);
+    L_FREE(value);
+    client->request.hook = NULL;
+    return err;
+}
+
+static int _on_headers_complete(http_parser *parser)
+{
+    l_client_t *client = parser->data;
+    client->request.method = parser->method;
+    int http_major = parser->http_major;
+    int http_minor = parser->http_minor;
+
+    // check HTTP version
+    if (http_major != 1) {
+        client->response.status_code = 505;
+        return 1;
+    } else if (http_minor > 0) {
+        client->close_connection = FALSE;
+    }
+
+    const char *date = l_gmtime();
+    L_PUT_HEADER(client->response.headers, "server", APP_NAME);
+    L_PUT_HEADER(client->response.headers, "date", date);
+    L_FREE(date);
 
     return 0;
 }
@@ -56,34 +100,40 @@ static int _on_body(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
 
-    if (!client->req.body) {
-        client->req.body = strndup(at, len);
+    if (!client->request.body) {
+        client->request.body = strndup(at, len);
     } else {
-        char *tmp = l_realloc(client->req.body, client->req.body_nread + len);
+        char *tmp = l_realloc(client->request.body, client->request.body_nread + len);
 
         if (tmp) {
-            stpncpy(tmp + client->req.body_nread, at, len);
-            client->req.body = tmp;
+            stpncpy(tmp + client->request.body_nread, at, len);
+            client->request.body = tmp;
         } else {
-            l_warn("%s: can't alloc enough memory", __func__);
-            return HPE_UNKNOWN;
+            LOG_ERROR(ERR_MEMORY_ALLOC);
+            client->response.status_code = 500;
+            return 1;
         }
     }
 
-    client->req.body_nread += len;
+    client->request.body_nread += len;
 
-    return 0;
+    return client->request.body_nread > client->request.content_length;
 }
 
 static int _on_message_complete(http_parser *parser)
 {
     l_client_t *client = parser->data;
-    client->req.method = client->parser.method;
+    client->request.is_finished = TRUE;
 
-    if (client->req.content_length == UNINIT)
-        client->req.content_length = 0;
+    if (client->request.content_length == 0)
+        L_PUT_HEADER(client->response.headers, "connection", "close");
 
-    client->req.is_finished = TRUE;
+    const char *connection = l_get_header(client->response.headers, "connection");
+
+    if (l_is_strcaseeq("close", connection))
+        client->close_connection = TRUE;
+    else if (l_is_strcaseeq("keep-alive", connection))
+        client->close_connection = FALSE;
 
     return 0;
 }
@@ -99,6 +149,7 @@ static http_parser_settings *_get_http_parser_settings()
         parser_settings->on_header_field = _on_header_field;
         parser_settings->on_header_value = _on_header_value;
         parser_settings->on_body = _on_body;
+        parser_settings->on_headers_complete = _on_headers_complete;
         parser_settings->on_message_complete = _on_message_complete;
     }
 
@@ -108,86 +159,101 @@ static http_parser_settings *_get_http_parser_settings()
 static int _do_http_parse(l_client_t *client, const char *at, size_t len)
 {
     size_t nparsed = http_parser_execute(&client->parser, _get_http_parser_settings(), at, len);
-
-    if (nparsed != len) {
-        l_warn("%s: %s", __func__, http_errno_description(HTTP_PARSER_ERRNO(&client->parser)));
-        return -1;
-    }
-    return 0;
+    return nparsed == len ? 0 : ERR_HTTP_PARSE;
 }
 
-static const char *_server_on_request(l_client_t *client)
+
+static int _server_on_request(l_client_t *client)
 {
-    if (!l_is_implemented_http_method(client)) {
-        l_send_code(client, 405);
-        return "Not implement http method";
-    }
+    int err = 0;
 
-    l_route_match_t match = l_match_route(client->req.url, client->req.method);
+    if (l_is_implemented_http_method(client)) {
+        const char *url_path = l_get_url_path(client);
+        l_route_match_t match = l_match_route(url_path, client->request.method);
 
-    l_http_response_t response = l_create_response();
-    if (match.callback) {
-        response = match.callback(client, match.args);
+        if (match.callback)
+            client->response = match.callback(client, match.args);
+        else
+            client->response.status_code = 404;
+
+        l_free_match(match);
+        L_FREE(url_path);
     } else {
-        response.status_code = 404;
+        client->response.status_code = 405;
     }
 
-    l_free_match(match);
-    return l_send_response(client, response);
+    return err;
 }
 
-static const char *_server_on_data(l_client_t *client, const char *buf, ssize_t nread)
+static int _server_on_data(l_client_t *client, const char *buf, ssize_t nread)
 {
-    const char *errmsg = NULL;
-
+    int err = 0;
     l_server_t *server = client->server;
+    _(_do_http_parse(client, buf, nread));
 
-    if (_do_http_parse(client, buf, nread)) {
-        errmsg = "parse HTTP request failed";
-        l_client_reset(client);
-    } else if (client->req.is_finished) {
-        if (server->on_request_cb)
-            errmsg = server->on_request_cb(client);
+    if (client->request.is_finished) {
+        if (server->on_request_cb && client->response.status_code == 200)
+            _(server->on_request_cb(client));
 
-        l_client_reset(client);
+        _(l_send_response(client, &client->response));
+        _log_request(client);
+        if (client->response.callback)
+            _(client->response.callback(&client->response));
+
+        l_reset_connection(client);
     }
 
-    return errmsg;
+END:;
+    if (err < 0) {
+        int status_code = client->response.status_code;
+        status_code = status_code ? status_code : 400;
+
+        L_PUT_HEADER(client->response.headers, "content-type", "text/html");
+        L_PUT_HEADER(client->response.headers, "connection", "close");
+
+        l_send_response(client, &client->response);
+        _log_request(client);
+    }
+    return err;
 }
 
 static void _server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv_buf_t *buf)
 {
+    int err = 0;
     l_client_t *client = client_handle->data;
     l_server_t *server = client->server;
-    const char *errmsg = NULL;
 
     // nread == 0 indicating that at this point there is nothing to be read.
     if (nread > 0) {
         if (server->on_data_cb)
-            errmsg = server->on_data_cb(client, buf->base, nread);
+            err = server->on_data_cb(client, buf->base, nread);
     } else if (nread < 0) {
-        if (nread != UV_EOF)
-            errmsg = "incorrect read";
+        // connection closed by client
+        if (nread == UV_EOF)
+            client->close_connection = TRUE;
+        else
+            err = ERR_UV_READ;
     }
 
     L_FREE(buf->base);
 
-    // close connection if any error or other end closed
-    if (l_has_str(errmsg)) {
-        l_warn("%s: %s", __func__, errmsg);
-        l_close_connection(client);
-    } else if (nread == UV_EOF) {
-        l_close_connection(client);
+    // if any error happend
+    if (err < 0) {
+        LOG_ERROR(err);
+        client->close_connection = TRUE;
     }
+
+    if (client->close_connection)
+        l_close_connection(client);
 }
 
 
 static void _server_on_connect(uv_stream_t *server_handle, int status)
 {
-    l_client_t *client = l_create_client(server_handle->data);
+    l_client_t *client = l_create_connection((l_server_t *) server_handle->data);
 
     if (client == NULL) {
-        l_warn("%s: uv_tcp_init failed when connect", __func__);
+        LOG_ERROR(ERR_CREATE_CONNECTION);
         return;
     }
 
@@ -209,31 +275,21 @@ l_server_t *l_create_server()
     server->on_data_cb = _server_on_data;
     server->on_request_cb = _server_on_request;
 
+    server->max_content_length = DEFAULT_MAX_CONTENT_LENGTH;
+
     return server;
 }
 
 void l_set_ip_port(l_server_t *server, const char *ip, int port)
 {
-    if (ip)
+    if (l_is_str(ip))
         server->ip = ip;
     if (port)
         server->port = port;
 }
 
-static l_server_t *_server;
-
-static void _free_server()
-{
-    L_FREE(_get_http_parser_settings());
-    l_free_routes();
-    L_FREE(_server);
-}
-
 void l_start_server(l_server_t *server)
 {
-    _server = server;
-    atexit(_free_server);
-
     struct sockaddr_in addr;
 
     UV_CHECK(uv_loop_init(&server->loop));
@@ -242,6 +298,7 @@ void l_start_server(l_server_t *server)
     UV_CHECK(uv_tcp_bind(&server->handle, (const struct sockaddr *) &addr, 0));
     UV_CHECK(uv_listen((uv_stream_t *) &server->handle, 128, _server_on_connect));
 
+    l_log(" * Running on http://%s:%d/", server->ip, server->port);
     uv_run(&server->loop, UV_RUN_DEFAULT);
 
     uv_loop_close(&server->loop);

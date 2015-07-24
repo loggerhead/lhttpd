@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <lhttpd.h>
 
-const char *on_tcp_data(l_client_t *client, const char *data, ssize_t len)
+int on_tcp_data(l_client_t *client, const char *data, ssize_t len)
 {
+    if (len > 500)
+        len = 500;
+    l_log("%.*s", len, data);
     l_send_bytes(client, data, len);
-    return "";
+    return 0;
 }
 
 int main(int argc, char *argv[])

@@ -13,7 +13,13 @@ int main()
 
     // string
     assert(l_is_num("12"));
-    assert(!l_has_str(""));
+    assert(!l_is_str(""));
+
+    assert(l_is_streq("s", "s"));
+    assert(!l_is_streq("s", "sS"));
+
+    assert(l_is_strcaseeq("s", "S"));
+    assert(!l_is_strcaseeq("s", "sS"));
 
     sprintf(buf, "sizeof(\"%s\")=%lu", str, sizeof(str));
     tmp = l_mprintf("sizeof(\"%s\")=%lu", str, sizeof(str));
@@ -54,18 +60,18 @@ int main()
     assert(!strcmp(l_get_suffix(tmp), "us"));
 
     // hash table
+    // init hash table, important!
     l_hitem_t *hashtbl = NULL;
-    L_HPUT(hashtbl, "key", "value");
-    char *value = l_hget(hashtbl, "key");
-    assert(!strcmp(value, "value"));
-    L_HITER(hashtbl, item) {
-        assert(!strcmp(item->value, "value"));
-    }
-    l_hfree(hashtbl, NULL);
+    L_HPUT(hashtbl, "foo", "val");
+    L_HPUT(hashtbl, "bar", "val");
 
-    hashtbl = NULL;
+    assert(!strcmp(l_hget(hashtbl, "bar"), "val"));
+
     L_HITER(hashtbl, item) {
+        assert(!strcmp(item->value, "val"));
     }
+
+    l_hfree(hashtbl, NULL);
 
     return 0;
 }

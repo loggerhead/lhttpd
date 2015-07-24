@@ -6,9 +6,10 @@ l_http_response_t test_static(l_client_t *client, l_hitem_t *args)
     l_http_response_t response = l_create_response();
 
     if (l_is_http_get(client)) {
-        response.body = "static";
+        const char *body = "static";
+        l_set_response_body(&response, body, strlen(body));
     } else {
-        response.status_code = 201;
+        response.status_code = 204;
     }
 
     return response;
@@ -61,12 +62,12 @@ l_http_response_t test_all(l_client_t *client, l_hitem_t *args)
         assert(one == 1);
         assert(!location || !strcmp(location, "here"));
 
-        response.body = "hello world";
+        const char *body = "hello world";
+        l_set_response_body(&response, body, strlen(body));
     } else {
         assert(!strcmp(in, "below"));
         assert(one == 0);
         assert(!strcmp(location, "there"));
-
     }
 
     return response;
@@ -100,6 +101,7 @@ int main(int argc, char *argv[])
         l_set_ip_port(server, NULL, atoi(argv[1]));
     else if (argc == 3)
         l_set_ip_port(server, argv[1], atoi(argv[2]));
+
     l_start_server(server);
 
     return 0;

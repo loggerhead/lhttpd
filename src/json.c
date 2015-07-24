@@ -12,7 +12,7 @@ static void _load_json_object(l_json_map_t maps[], l_json_t *jobj)
         for (int i = 0; maps[i].key; i++) {
             l_json_map_t map = maps[i];
 
-            if (strcmp(map.key, key))
+            if (!l_is_streq(map.key, key))
                 continue;
 
             switch (json_object_get_type(val)) {
