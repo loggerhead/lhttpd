@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     const char *tmp = "hello";
     l_http_response_t response = l_create_response();
     l_set_response_body(&response, tmp, strlen(tmp));
-    assert(!strcmp(response.body, tmp));
+    assert(!strncmp(response.body, tmp, response.body_len));
     L_FREE(response.body);
 
     start_server(argc, argv);
