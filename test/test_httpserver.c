@@ -1,7 +1,7 @@
 #include "../lhttpd.h"
 #include <assert.h>
 
-#define TEST_DATA_LEN 104857
+#define TEST_DATA_LEN 1048576
 
 int is_num(const char *str)
 {
@@ -16,17 +16,26 @@ int is_num(const char *str)
 
 int on_request(l_client_t *client)
 {
-    if (l_is_http_post(client) && is_num(client->request.body)) {
-        l_send_code(client, atoi(client->request.body));
+    int err = 0;
+    int status_code_class = client->response.status_code / 100;
+
+    if (status_code_class != 4 && status_code_class != 5) {
+        if (l_is_http_post(client) && is_num(client->request.body)) {
+            l_send_code(client, atoi(client->request.body));
+        } else {
+            // 'F' * TEST_DATA_LEN
+            char *body = l_malloc(TEST_DATA_LEN+1);
+            memset(body, 'F', TEST_DATA_LEN);
+            body[TEST_DATA_LEN] = '\0';
+
+            l_send_body(client, body);
+
+            L_FREE(body);
+        }
     } else {
-        // 'F' * TEST_DATA_LEN
-        char *body = l_malloc(TEST_DATA_LEN+1);
-        memset(body, 'F', TEST_DATA_LEN);
-        body[TEST_DATA_LEN] = '\0';
-
-        l_send_body(client, body);
-
-        L_FREE(body);
+        err = l_send_response(client, &client->response);
+        if (client->response.callback)
+            err = client->response.callback(&client->response);
     }
 
     return 0;
