@@ -159,7 +159,11 @@ static http_parser_settings *_get_http_parser_settings()
 static int _do_http_parse(l_client_t *client, const char *at, size_t len)
 {
     size_t nparsed = http_parser_execute(&client->parser, _get_http_parser_settings(), at, len);
-    return nparsed == len ? 0 : ERR_HTTP_PARSE;
+    if (nparsed == len)
+        return 0;
+
+    LOG_ERROR_STR(HTTP_PARSER_ERRNO(&client->parser));
+    return ERR_HTTP_PARSE;
 }
 
 

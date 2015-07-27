@@ -26,11 +26,13 @@ enum {
 #undef XX
 };
 
+#define LOG_ERROR_STR(errmsg) l_warn("%s - - [%s]: %s", __func__, l_now(), errmsg)
+
 #define LOG_ERROR(err)                                            \
     do {                                                          \
         const char *errmsg = _strerror(err);                      \
         if (errmsg)                                               \
-            l_warn("%s - - [%s]: %s", __func__, l_now(), errmsg); \
+            LOG_ERROR_STR(errmsg);                                \
     } while (0)
 
 #define _(ret)           \
