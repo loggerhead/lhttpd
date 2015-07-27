@@ -1,7 +1,7 @@
 #include "../lhttpd.h"
 #include <assert.h>
 
-#define TEST_DATA_LEN 1048576
+#define TEST_DATA_LEN 10485760
 
 int is_num(const char *str)
 {
