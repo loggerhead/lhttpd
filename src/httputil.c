@@ -209,6 +209,7 @@ int l_send_response(l_client_t *client, l_http_response_t *response)
 {
     int err = 0;
     int status_code = response->status_code ? response->status_code : 200;
+    response->status_code = status_code;
     int status_code_class = status_code / 100;
     l_bool_t should_send_body = response->body_len && l_is_str(response->body);
 

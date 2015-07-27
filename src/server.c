@@ -64,6 +64,7 @@ static int _on_headers_complete(http_parser *parser)
     l_client_t *client = parser->data;
     l_server_t *server = client->server;
     client->request.method = parser->method;
+    int status_code_class = client->response.status_code / 100;
 
     if (l_is_implemented_http_method(client)) {
         char *value = l_get_header(client->request.headers, "content-length");
@@ -75,8 +76,8 @@ static int _on_headers_complete(http_parser *parser)
         }
 
         value = l_get_header(client->request.headers, "expect");
-        // TODO: should return 100 response code ?
-        if (l_is_strcaseeq("100-continue", value))
+        if (status_code_class != 4 && status_code_class != 5
+                && l_is_strcaseeq("100-continue", value))
             client->response.status_code = 100;
     } else {
         client->response.status_code = 501;
@@ -107,7 +108,9 @@ static int _on_body(http_parser *parser, const char *at, size_t len)
     }
 
     client->request.body_nread += len;
-    if (client->request.body_nread > client->request.content_length)
+    if (client->request.content_length == 0)
+        client->response.status_code = 411;
+    else if (client->request.body_nread > client->request.content_length)
         client->response.status_code = 413;
     return 0;
 }
