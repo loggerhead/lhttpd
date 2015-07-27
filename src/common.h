@@ -38,7 +38,7 @@ enum {
 #define _(ret)           \
     do {                 \
         err = (ret);     \
-        if (err < 0)     \
+        if (err)         \
             goto END;    \
     } while (0)
 

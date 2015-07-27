@@ -19,21 +19,22 @@ static void _alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *
 
 static int _on_url(http_parser *parser, const char *at, size_t len)
 {
-    int err = 0;
     l_client_t *client = parser->data;
     client->request.url = strndup(at, len);
 
-    _(http_parser_parse_url(at, len, 0, &client->request.parsed_url));
-    struct http_parser_url u = client->request.parsed_url;
-
-    int schema_len = u.field_data[UF_SCHEMA].len;
-    if (schema_len) {
-        _(schema_len != 4);
-        _(strncmp("http", at + u.field_data[UF_SCHEMA].off, 4));
+    if (http_parser_parse_url(at, len, 0, &client->request.parsed_url)) {
+        client->response.status_code = 400;
+        return 0;
     }
 
-END:;
-    return err;
+    struct http_parser_url u = client->request.parsed_url;
+    int schema_len = u.field_data[UF_SCHEMA].len;
+
+    // if schema != 'http'
+    if (0 < schema_len && (schema_len != 4 || strncmp("http", at + u.field_data[UF_SCHEMA].off, 4)))
+        client->response.status_code = 400;
+
+    return 0;
 }
 
 static int _on_header_field(http_parser *parser, const char *at, size_t len)
@@ -46,52 +47,40 @@ static int _on_header_field(http_parser *parser, const char *at, size_t len)
 // NOTE: not support multiple values for one field
 static int _on_header_value(http_parser *parser, const char *at, size_t len)
 {
-    int err = 0;
     l_client_t *client = parser->data;
-    l_server_t *server = client->server;
     const char *field = client->request.hook;
     const char *value = strndup(at, len);
 
-    if (l_is_strcaseeq("content-length", field)) {
-        long content_length = strtol(value, NULL, 10);
-        client->request.content_length = content_length;
-
-        if (content_length > server->max_content_length) {
-            client->response.status_code = 413;
-            err = 1;
-        }
-    } else if (l_is_strcaseeq("Expect", field)) {
-        if (l_is_strcaseeq("100-continue", value))
-            client->response.status_code = 100;
-    } else {
-        L_PUT_HEADER(client->request.headers, field, value);
-    }
+    L_PUT_HEADER(client->request.headers, field, value);
 
     L_FREE(field);
     L_FREE(value);
     client->request.hook = NULL;
-    return err;
+    return 0;
 }
 
 static int _on_headers_complete(http_parser *parser)
 {
     l_client_t *client = parser->data;
+    l_server_t *server = client->server;
     client->request.method = parser->method;
-    int http_major = parser->http_major;
-    int http_minor = parser->http_minor;
 
-    // check HTTP version
-    if (http_major != 1) {
-        client->response.status_code = 505;
-        return 1;
-    } else if (http_minor > 0) {
-        client->close_connection = FALSE;
+    if (l_is_implemented_http_method(client)) {
+        char *value = l_get_header(client->request.headers, "content-length");
+        if (value) {
+            long content_length = strtol(value, NULL, 10);
+            client->request.content_length = content_length;
+            if (content_length > server->max_content_length)
+                client->response.status_code = 413;
+        }
+
+        value = l_get_header(client->request.headers, "expect");
+        // TODO: should return 100 response code ?
+        if (l_is_strcaseeq("100-continue", value))
+            client->response.status_code = 100;
+    } else {
+        client->response.status_code = 501;
     }
-
-    const char *date = l_gmtime();
-    L_PUT_HEADER(client->response.headers, "server", APP_NAME);
-    L_PUT_HEADER(client->response.headers, "date", date);
-    L_FREE(date);
 
     return 0;
 }
@@ -99,6 +88,9 @@ static int _on_headers_complete(http_parser *parser)
 static int _on_body(http_parser *parser, const char *at, size_t len)
 {
     l_client_t *client = parser->data;
+    int status_code_class = client->response.status_code / 100;
+    if (status_code_class == 4 || status_code_class == 5)
+        return 0;
 
     if (!client->request.body) {
         client->request.body = strndup(at, len);
@@ -111,29 +103,38 @@ static int _on_body(http_parser *parser, const char *at, size_t len)
         } else {
             LOG_ERROR(ERR_MEMORY_ALLOC);
             client->response.status_code = 500;
-            return 1;
         }
     }
 
     client->request.body_nread += len;
-
-    return client->request.body_nread > client->request.content_length;
+    if (client->request.body_nread > client->request.content_length)
+        client->response.status_code = 413;
+    return 0;
 }
 
 static int _on_message_complete(http_parser *parser)
 {
     l_client_t *client = parser->data;
+    int vmajor = parser->http_major;
+    int vminor = parser->http_minor;
     client->request.is_finished = TRUE;
+    client->close_connection = http_should_keep_alive(parser);
 
-    if (client->request.content_length == 0)
-        L_PUT_HEADER(client->response.headers, "connection", "close");
-
-    const char *connection = l_get_header(client->response.headers, "connection");
-
-    if (l_is_strcaseeq("close", connection))
+    if (client->response.status_code == 413) {
         client->close_connection = TRUE;
-    else if (l_is_strcaseeq("keep-alive", connection))
+        return 0;
+    }
+
+    // check HTTP version
+    if (vmajor == 1 && vminor >= 1) {
         client->close_connection = FALSE;
+    } else if (vmajor == 1 && vminor == 0) {
+        client->close_connection = TRUE;
+    } else if (vmajor == 0 && vminor == 9) {
+        client->close_connection = TRUE;
+    } else {
+        client->response.status_code = 505;
+    }
 
     return 0;
 }
@@ -170,8 +171,9 @@ static int _do_http_parse(l_client_t *client, const char *at, size_t len)
 static int _server_on_request(l_client_t *client)
 {
     int err = 0;
+    int status_code_class = client->response.status_code / 100;
 
-    if (l_is_implemented_http_method(client)) {
+    if (status_code_class != 4 && status_code_class != 5) {
         const char *url_path = l_get_url_path(client);
         l_route_match_t match = l_match_route(url_path, client->request.method);
 
@@ -182,9 +184,14 @@ static int _server_on_request(l_client_t *client)
 
         l_free_match(match);
         L_FREE(url_path);
-    } else {
-        client->response.status_code = 405;
     }
+
+    // handle HTTP response
+    err = l_send_response(client, &client->response);
+    if (!err)
+        _log_request(client);
+    if (client->response.callback)
+        err = client->response.callback(&client->response);
 
     return err;
 }
@@ -193,31 +200,20 @@ static int _server_on_data(l_client_t *client, const char *buf, ssize_t nread)
 {
     int err = 0;
     l_server_t *server = client->server;
-    _(_do_http_parse(client, buf, nread));
+    err = _do_http_parse(client, buf, nread);
 
-    if (client->request.is_finished) {
-        if (server->on_request_cb && client->response.status_code == 200)
-            _(server->on_request_cb(client));
-
-        _(l_send_response(client, &client->response));
-        _log_request(client);
-        if (client->response.callback)
-            _(client->response.callback(&client->response));
-
+    if (err) {
+        int status_code_class = client->response.status_code / 100;
+        if (status_code_class != 4 && status_code_class != 5)
+            client->response.status_code = 400;
+        l_send_code(client, client->response.status_code);
+        l_reset_connection(client);
+    } else if (client->request.is_finished) {
+        if (server->on_request_cb)
+            err = server->on_request_cb(client);
         l_reset_connection(client);
     }
 
-END:;
-    if (err < 0) {
-        int status_code = client->response.status_code;
-        status_code = status_code ? status_code : 400;
-
-        L_PUT_HEADER(client->response.headers, "content-type", "text/html");
-        L_PUT_HEADER(client->response.headers, "connection", "close");
-
-        l_send_response(client, &client->response);
-        _log_request(client);
-    }
     return err;
 }
 
@@ -232,20 +228,15 @@ static void _server_on_read(uv_stream_t *client_handle, ssize_t nread, const uv_
         if (server->on_data_cb)
             err = server->on_data_cb(client, buf->base, nread);
     } else if (nread < 0) {
-        // connection closed by client
-        if (nread == UV_EOF)
-            client->close_connection = TRUE;
-        else
+        if (nread != UV_EOF)
             err = ERR_UV_READ;
+        client->close_connection = TRUE;
     }
 
     L_FREE(buf->base);
 
-    // if any error happend
-    if (err < 0) {
+    if (err)
         LOG_ERROR(err);
-        client->close_connection = TRUE;
-    }
 
     if (client->close_connection)
         l_close_connection(client);

@@ -82,7 +82,6 @@ l_client_t *l_create_connection(l_server_t *server)
         client->response = l_create_response();
         client->server = server;
         client->handle.data = client;
-        client->close_connection = FALSE;
     }
 
     return client;
@@ -116,14 +115,9 @@ const char *l_status_code_str(int status_code)
 
 l_http_response_t l_create_response()
 {
-    l_http_response_t response = {
-        .status_code = 200,
-        .headers = NULL,
-        .body = NULL,
-        .body_len = 0,
-        .callback = _free_response,
-    };
-
+    l_http_response_t response;
+    bzero(&response, sizeof(response));
+    response.callback = _free_response;
     return response;
 }
 
@@ -231,10 +225,16 @@ int l_send_response(l_client_t *client, l_http_response_t *response)
 
     _(l_send_response_line(client, client->parser.http_minor, status_code));
 
-    if (!l_get_header(response->headers, "content-type"))
-        L_PUT_HEADER(response->headers, "content-type", "text/html");
+    const char *date = l_gmtime();
+    L_PUT_HEADER(client->response.headers, "date", date);
+    L_FREE(date);
+    L_PUT_HEADER(client->response.headers, "server", APP_NAME);
+    if (client->close_connection)
+        L_PUT_HEADER(client->response.headers, "connection", "close");
 
     if (should_send_body) {
+        if (!l_get_header(response->headers, "content-type"))
+            L_PUT_HEADER(response->headers, "content-type", "text/html");
         char *tmp = l_mprintf("content-length: %d" CRLF, response->body_len);
         _(l_send_bytes(client, tmp, strlen(tmp)));
         L_FREE(tmp);
