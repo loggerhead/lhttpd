@@ -3,6 +3,19 @@
 
 #include "common.h"
 
+typedef struct {
+    uv_write_t req;
+    uv_buf_t buf;
+} write_req_t;
+
+#define CRLF "\r\n"
+#define HTTP_ERRMSG_FMT "<head><title>Error response</title></head>"          \
+                        "<body>"                                              \
+                        "<h1>Error response</h1>"                             \
+                        "<p>Error code %d."                                   \
+                        "<p>Message: %s."                                     \
+                        "</body>"
+
 #define IMPLEMENTED_HTTP_METHOD_MAP(XX)     \
     XX(GET)                                 \
     XX(PUT)                                 \

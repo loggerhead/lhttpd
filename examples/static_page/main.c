@@ -1,7 +1,8 @@
-#include <lhttpd.h>
-#include <time.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <assert.h>
+#include <time.h>
+#include <lhttpd.h>
 
 
 #define FILE_LEN 2
@@ -30,12 +31,12 @@ l_http_response_t random_image(l_client_t *client, l_hitem_t *args)
 
     struct dirent *dir = NULL;
     DIR *d = opendir("static/imgs");
-    if (d) {
-        int j = 0;
-        for (dir = readdir(d); dir; dir = readdir(d))
-            if (dir->d_name[0] != '.')
-                filepaths[j++] = dir->d_name;
-    }
+    assert(d);
+
+    int size = 0;
+    for (dir = readdir(d); dir; dir = readdir(d))
+        if (dir->d_name[0] != '.')
+            filepaths[size++] = dir->d_name;
 
     const char *filepath = l_pathcat("static/imgs", filepaths[rand() % FILE_LEN]);
     l_http_response_t response = l_create_response_by_file(filepath);

@@ -1,16 +1,16 @@
 #include <lhttpd.h>
 
-const char *on_http_request(l_client_t *client)
+int on_http_request(l_client_t *client)
 {
-    l_log("==> %s", client->req.url);
-    l_print_headers(client->req.headers);
+    l_log("==> %s", client->request.url);
+    l_print_headers(client->request.headers);
     l_log("");
-    if (client->req.method != HTTP_GET)
-        l_log("%.*s\n", 80, client->req.body);
+    if (client->request.method != HTTP_GET)
+        l_log("%.*s\n", 80, client->request.body);
 
     l_send_body(client, "hello, world");
-    // return empty string to tell caller everything is OK, return error desription othewise.
-    return "";
+    // return 0 to tell caller everything is OK, return error code othewise.
+    return 0;
 }
 
 int main(int argc, char *argv[])

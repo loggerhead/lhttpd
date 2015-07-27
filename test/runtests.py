@@ -11,10 +11,11 @@ import grequests
 import subprocess
 import signal
 
+TEST_DATA_LEN = 1048576
 TEST_PORT = 10000
 TEST_HOST = '127.0.0.1'
 TEST_URL  = 'http://%s:%d' % (TEST_HOST, TEST_PORT)
-TEST_DATA = 'A' * (1024**2)
+TEST_DATA = 'A' * TEST_DATA_LEN
 
 NULL_OUT = open("/dev/null","wb")
 
@@ -89,7 +90,7 @@ class test_redis(BaseTestCase):
 
 class test_httpserver(BaseServerTestCase):
     def runTest(self):
-        EXPECT = 'F' * 100000
+        EXPECT = 'F' * TEST_DATA_LEN
 
         rs = [
             grequests.get(TEST_URL + "/path/to/resouce"),
@@ -99,9 +100,12 @@ class test_httpserver(BaseServerTestCase):
         for response in responses:
             assert response.text == EXPECT
 
-        status_code = 404
-        r = requests.post(TEST_URL, data=str(status_code))
-        assert r.status_code == status_code
+        r = requests.post(TEST_URL, data=str(404))
+        assert r.status_code == 404
+
+        # Beyond the maximum content length limit
+        r = requests.post(TEST_URL, data=TEST_DATA + 'A')
+        assert r.status_code == 413
 
 class test_webrouter(BaseServerTestCase):
     def runTest(self):
@@ -112,7 +116,7 @@ class test_webrouter(BaseServerTestCase):
         assert get("/").text == "static"
         assert get("/static").text == "static"
         assert get("/static/").text == "static"
-        assert post("/static/test.html", data=TEST_DATA).status_code == 201
+        assert post("/static/test.html", data=TEST_DATA).status_code == 204
         assert get("/static/test.html").status_code == 404
 
         assert get("/x").status_code == 200

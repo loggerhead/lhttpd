@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include "util.h"
 
-/******************************** Log ****************************************/
+
 void l_error(const char *format, ...)
 {
     fprintf(stderr, ANSI_FG_RED);
@@ -37,7 +38,7 @@ void l_log(const char *format, ...)
     fprintf(fp, ANSI_RESET "\n");
 }
 
-/******************************* Memory **************************************/
+
 #define ALLOC_CHECK(ptr)                              \
 do {                                                  \
     if (!ptr) {                                       \
@@ -67,19 +68,29 @@ void *l_realloc(void *ptr, size_t size)
     return new;
 }
 
-/******************************* String **************************************/
-int l_is_num(const char *str)
+
+l_bool_t l_is_num(const char *str)
 {
-    if (!l_has_str(str))
-        return 0;
+    if (!l_is_str(str))
+        return FALSE;
     for (; '0' <= *str && *str <= '9'; str++)
         ;
     return *str == '\0';
 }
 
-int l_has_str(const char *str)
+l_bool_t l_is_str(const char *str)
 {
     return (str && *str);
+}
+
+l_bool_t l_is_streq(const char *str1, const char *str2)
+{
+    return str1 && str2 && !strcmp(str1, str2);
+}
+
+l_bool_t l_is_strcaseeq(const char *str1, const char *str2)
+{
+    return str1 && str2 && !strcasecmp(str1, str2);
 }
 
 char *l_mprintf(const char *fmt, ...)
@@ -143,7 +154,36 @@ char *l_strdup(const char *str)
     return copy;
 }
 
-/********************************* Hash **************************************/
+
+const char *l_now()
+{
+    time_t t = time(NULL);
+    char *tstr = ctime(&t);
+    tstr[24] = '\0';
+    return tstr;
+}
+
+// NOTE: need free
+const char *l_gmtime()
+{
+    static const char *weekdays[] = {
+        "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+    };
+    static const char *months[] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+
+    time_t t = time(NULL);
+    struct tm *gmt = gmtime(&t);
+
+    return l_mprintf("%s, %02d %3s %4d %02d:%02d:%02d GMT",
+        weekdays[gmt->tm_wday],
+        gmt->tm_mday, months[gmt->tm_mon], gmt->tm_year,
+        gmt->tm_hour, gmt->tm_min, gmt->tm_sec);
+}
+
+
 l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value)
 {
     l_hitem_t *item = NULL;
@@ -153,7 +193,7 @@ l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value)
         item = l_malloc(sizeof(*item));
         item->key = (char *)key;
 
-        // NOTE: `key` is not variable `key` but l_hitem_t field `key`
+        // NOTE: `key` is not a variable but a `l_hitem_t`'s field
         HASH_ADD_STR(hashtbl, key, item);
     }
     item->value = (char *)value;
@@ -168,6 +208,10 @@ char *l_hget(l_hitem_t *hashtbl, const char *key)
     return item ? item->value : NULL;
 }
 
+
+/* leave `free_fn` NULL to tell `l_hfree` not free fields
+ * NOTE: just released all memory, so do NOT iterate `hashtbl` after called
+ */
 void l_hfree(l_hitem_t *hashtbl, l_hitem_free_fn free_fn)
 {
     l_hitem_t *item, *tmp;
@@ -180,7 +224,7 @@ void l_hfree(l_hitem_t *hashtbl, l_hitem_free_fn free_fn)
     }
 }
 
-/********************************* File **************************************/
+
 l_bool_t l_match_file_suffix(const char *filename, const char *suffix)
 {
     const char *dot = strrchr(filename, '.');

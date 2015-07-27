@@ -13,7 +13,6 @@
  */
 
 #include <stdio.h>
-#include <assert.h>
 #include "webrouter.h"
 
 // String key : l_dynamic_route_t value
@@ -51,8 +50,6 @@ void _print_route_nodes(l_route_node_t *node)
     }
     l_log("---------  PRINT END  ---------");
 }
-
-#undef _PRINT_CHILDREN
 
 
 static void _free_args(l_hitem_t *item)
@@ -95,29 +92,6 @@ void l_free_routes()
     }
 }
 
-
-/* Extract relative path from url
- * NOTE: need free
- */
-static const char *_get_relative_url(const char *url)
-{
-    const char *head1 = "http://";
-    const char *head2 = "https://";
-    int hlen1 = strlen(head1);
-    int hlen2 = strlen(head2);
-
-    // skip host part
-    if (!strncmp(url, head1, hlen1))
-        url = strchr(url + hlen1, '/');
-    else if (!strncmp(url, head2, hlen2))
-        url = strchr(url + hlen2, '/');
-    if (!url)
-        url = "/";
-
-    const char *tail = strchr(url, '?');
-    return tail ? strndup(url, tail-url) : strdup(url);
-}
-
 /* split `<name:filter>` to `name` and `filter` parts
  * NOTE: need free
  */
@@ -155,7 +129,7 @@ static l_token_t _get_token(const char *url)
 {
     l_token_t token = { url, 0 };
 
-    if (!l_has_str(url))
+    if (!l_is_str(url))
         return token;
 
     if (url[0] == '/') {
@@ -228,7 +202,7 @@ static l_bool_t _match_route(l_route_match_t *match, const char *url, l_route_no
 {
     l_token_t token = _get_token(url);
 
-    if (!l_has_str(token.ptr)) {
+    if (!l_is_str(token.ptr)) {
         match->callback = root->callback;
         return TRUE;
     }
@@ -272,7 +246,6 @@ static l_bool_t _match_route(l_route_match_t *match, const char *url, l_route_no
                 match->callback = child->callback;
                 _RETURN_AND_SAVE_ARG(strdup(url));
         }
-#undef _RETURN_AND_SAVE_ARG
 
         L_FREE(name);
     }
@@ -281,19 +254,15 @@ static l_bool_t _match_route(l_route_match_t *match, const char *url, l_route_no
     match->callback = saved;
     L_FREE(stoken);
     return FALSE;
-GOOD_END:
+GOOD_END:;
     return TRUE;
 }
 
-l_route_match_t l_match_route(const char *url, l_http_method_t method)
+l_route_match_t l_match_route(const char *url_path, l_http_method_t method)
 {
-    url = _get_relative_url(url);
     l_route_node_t *root = &_roots[method];
     l_route_match_t match = { NULL, NULL };
 
-    if (url)
-        _match_route(&match, url, root);
-
-    L_FREE(url);
+    _match_route(&match, url_path, root);
     return match;
 }
