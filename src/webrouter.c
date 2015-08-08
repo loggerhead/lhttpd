@@ -154,7 +154,6 @@ static l_bool_t _is_dynamic_rule(const char *str, int len)
 }
 
 
-// NOTE: need free after server close ==> stoken, nodes (not root in _roots), rule in _dynamics
 void l_add_route(const char *route, l_http_method_t method, l_match_route_cb callback)
 {
     l_token_t token = _get_token(route);
@@ -260,6 +259,8 @@ GOOD_END:;
 
 l_route_match_t l_match_route(const char *url_path, l_http_method_t method)
 {
+    if (method == HTTP_HEAD)
+        method = HTTP_GET;
     l_route_node_t *root = &_roots[method];
     l_route_match_t match = { NULL, NULL };
 

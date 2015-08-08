@@ -226,6 +226,7 @@ int l_send_response(l_client_t *client, l_http_response_t *response)
 
     _(l_send_response_line(client, client->parser.http_minor, status_code));
 
+    // send http response headers
     const char *date = l_gmtime();
     L_PUT_HEADER(client->response.headers, "date", date);
     L_FREE(date);
@@ -251,6 +252,9 @@ int l_send_response(l_client_t *client, l_http_response_t *response)
 
     _(l_send_blankline(client));
 
+    if (l_is_http_head(client))
+        should_send_body = FALSE;
+    // send http response body
     if (should_send_body)
         _(l_send_bytes(client, response->body, response->body_len));
 

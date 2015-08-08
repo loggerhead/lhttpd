@@ -18,10 +18,10 @@ typedef struct {
 
 #define IMPLEMENTED_HTTP_METHOD_MAP(XX)     \
     XX(GET)                                 \
-    XX(PUT)                                 \
     XX(POST)                                \
-    XX(HEAD)                                \
-    XX(DELETE)
+    XX(HEAD)
+    // XX(PUT)
+    // XX(DELETE)
 
 #define HTTP_STATUS_CODE_MAP(XX)               \
     XX(100, "Continue")                        \

@@ -6,7 +6,7 @@ Lhttpd is a C library to take care of the detail about TCP and HTTP, and it's AP
 #Features
 * Asynchronous.
 * Lightweight and easy to use.
-* Provide TCP support and some webserver functionality.
+* Support HTTP methods: GET, POST, HEAD.
 * Simple [bottle-like](http://bottlepy.org/docs/dev/tutorial.html#request-routing) web route support.
 * JSON support.
 * Redis support.

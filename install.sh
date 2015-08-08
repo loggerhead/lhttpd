@@ -46,16 +46,19 @@ function _examples() {
 
 function _check() {
     TEST_EXEC=./test_webrouter
+    cd test
 
-    if cd test && _make && [[ -x $TEST_EXEC ]]; then
-        valgrind --leak-check=full --show-leak-kinds=all --dsymutil=yes --log-file=leak_check.log $TEST_EXEC &
+    if [[ -x $TEST_EXEC ]]; then
+        valgrind --leak-check=full --show-leak-kinds=all --dsymutil=yes --track-origins=yes --log-file=leak_check.log $TEST_EXEC &
         sleep 1
-        siege -c100 -b -if siege_urls.txt 1> benchtest.log
+        siege -c100 -b -if ./siege_urls.txt 1> benchtest.log
 
         pkill -f valgrind
-        siege -t2s -if siege_urls.txt &> /dev/null
+        siege -t2s -if ./siege_urls.txt &> /dev/null
         cd ..
-    fi
+    else
+        echo "Please run tests first"
+    fi 
 }
 
 if [[ -z $1 ]];then
