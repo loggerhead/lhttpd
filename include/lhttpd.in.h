@@ -140,7 +140,7 @@ l_http_response_t l_create_redirect_response(const char *url);
  * Create response from static file.
  * NOTE: filepath can't containing "..", otherwise, 404 will be returned.
  */
-l_http_response_t l_create_response_by_file(const char *filepath);
+l_http_response_t l_create_response_by_file(l_client_t *client, const char *filepath);
 void l_set_response_body(l_http_response_t *response, const char *body, size_t body_len);
 
 /* HTTP header */
@@ -163,6 +163,8 @@ void l_print_headers(l_hitem_t *headers);
  */
 const char *l_get_url_path(l_client_t *client);
 const char *l_get_mimetype(const char *filepath);
+// NOTE: need free
+char *l_get_etag(const char *filepath);
 
 
 /******************************************************************************
@@ -181,7 +183,10 @@ void l_log(const char *format, ...);
 /* Time */
 const char *l_now();
 // NOTE: need free
-const char *l_gmtime();
+char *l_seconds2gmtime(time_t t);
+char *l_gmtime();
+time_t l_getmtime_seconds(const char *path);
+char *l_getmtime(const char *path);
 
 /* Memory alloc and free */
 #define L_FREE(memory) free((void *) (memory))
@@ -203,7 +208,8 @@ void l_lowercase(char *str);
 /* File operation */
 l_bool_t l_match_file_suffix(const char *filename, const char *suffix);
 l_bool_t l_is_file_exist(const char *path);
-size_t l_get_filesize(FILE *fp);
+size_t l_get_filesize(const char *path);
+size_t l_get_filesize_by_fp(FILE *fp);
 // NOTE: return value need free
 const char *l_pathcat(const char *dir, const char *filename);
 // NOTE: return value need free by `L_FREE`
@@ -221,6 +227,8 @@ const char *l_get_suffix(const char *filename);
  */
 l_buf_t l_read_file(const char *filepath);
 void l_mkdirs(const char *dir);
+
+uint32_t l_adler32(const char *data, size_t len);
 
 /* Hash table */
 struct _hitem_t {

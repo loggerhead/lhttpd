@@ -55,15 +55,22 @@ class BaseServerTestCase(unittest.TestCase, object):
 
 class test_httputil(BaseServerTestCase):
     def runTest(self):
-        get = lambda tail: requests.get(TEST_URL + tail, allow_redirects=False)
+        get = lambda tail, **kwargs: requests.get(TEST_URL + tail, allow_redirects=False, **kwargs)
 
         assert get("/test/send_bytes").status_code == 200
         assert get("/test/send_response").status_code == 200
         assert get("/test/send_code").status_code == 204
         assert get("/test/send_body").text == "test"
-
         assert get("/test/redirect").status_code == 301
-        assert get("/test/static_file").text == open(self.name + '.c').read()
+
+        r = get("/test/static_file")
+        assert r.text == open(self.name + '.c').read()
+        headers = {
+            'If-Modified-Since': r.headers.get('last-modified'),
+            'If-None-Match': r.headers.get('eTag'),
+        }
+        r = get("/test/static_file", headers=headers)
+        assert r.status_code == 304 and len(r.text) == 0
 
 class test_util(BaseTestCase):
     pass

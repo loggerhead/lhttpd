@@ -136,7 +136,7 @@ l_http_response_t l_create_redirect_response(const char *url)
  * TODO: 1. complete headers, include: ETags, expires.
  *       2. check headers and return 304 if need(maybe need pass `args` into function)
  */
-l_http_response_t l_create_response_by_file(const char *filepath)
+l_http_response_t l_create_response_by_file(l_client_t *client, const char *filepath)
 {
     l_http_response_t response = l_create_response();
 
@@ -149,12 +149,35 @@ l_http_response_t l_create_response_by_file(const char *filepath)
     if (strstr(filepath, "..")) {
         response.status_code = 404;
     } else {
-        tmp = l_read_file(filepath);
-        L_PUT_HEADER(response.headers, "Content-Type", l_get_mimetype(filepath));
+        time_t expires_t = time(NULL) + DEFAULT_MAX_EXPIRES_TIME;
+        char *expires = l_seconds2gmtime(expires_t);
+        char *etag = l_get_etag(filepath);
+        char *cache_control = l_mprintf("max-age=%lu", DEFAULT_MAX_EXPIRES_TIME);
+
+        L_PUT_HEADER(response.headers, "cache-control", cache_control);
+        L_PUT_HEADER(response.headers, "content-type", l_get_mimetype(filepath));
+        L_PUT_HEADER(response.headers, "expires", expires);
+        L_PUT_HEADER(response.headers, "etag", etag);
+
+        const char *if_none_match = l_get_header(client->request.headers, "if-none-match");
+
+        if (l_is_streq(etag, if_none_match)) {
+            response.status_code = 304;
+        } else {
+            char *last_modified = l_getmtime(filepath);
+            L_PUT_HEADER(response.headers, "last-modified", last_modified);
+            L_FREE(last_modified);
+
+            tmp = l_read_file(filepath);
+            l_set_response_body(&response, tmp.data, tmp.len);
+            L_FREE(tmp.data);
+        }
+
+        L_FREE(etag);
+        L_FREE(expires);
+        L_FREE(cache_control);
     }
 
-    l_set_response_body(&response, tmp.data, tmp.len);
-    L_FREE(tmp.data);
     return response;
 }
 
@@ -240,8 +263,8 @@ int l_send_response(l_client_t *client, l_http_response_t *response)
         char *tmp = l_mprintf("content-length: %d" CRLF, response->body_len);
         _(l_send_bytes(client, tmp, strlen(tmp)));
         L_FREE(tmp);
-    // TODO: handle more HTTP response code
-    } else {
+    // TODO: handle more response code
+    } else if (status_code_class != 1 && status_code != 204 && status_code != 304) {
         char *tmp = "content-length: 0" CRLF;
         _(l_send_bytes(client, tmp, strlen(tmp)));
     }
@@ -438,4 +461,14 @@ END:;
     const char *mimetype = l_hget(mimetypes, suffix);
     L_FREE(suffix);
     return mimetype ? mimetype : "application/octet-stream";
+}
+
+// NOTE: need free
+char *l_get_etag(const char *filepath)
+{
+    char *etag = l_mprintf(APP_NAME "-%lu%lu%lu",
+                           l_getmtime_seconds(filepath),
+                           l_get_filesize(filepath),
+                           l_adler32(filepath, strlen(filepath)));
+    return etag;
 }

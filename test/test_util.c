@@ -42,9 +42,16 @@ int main()
     assert(l_match_file_suffix("a.out", "out"));
     assert(l_is_file_exist("test_util.c"));
 
-    FILE *fp = fopen("test_util.c", "r");
-    assert(l_get_filesize(fp));
+    const char *filepath = "test_util.c";
+    FILE *fp = fopen(filepath, "r");
+    size_t fsize1 = l_get_filesize_by_fp(fp);
+    assert(fsize1);
+    size_t fsize2 = l_get_filesize(filepath);
+    assert(fsize2);
+    assert(fsize1 == fsize2);
     fclose(fp);
+
+    assert(l_getmtime_seconds(filepath));
 
     const char *path = l_pathcat("hello", "world");
     assert(!strcmp(path, "hello/world"));

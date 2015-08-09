@@ -164,7 +164,7 @@ const char *l_now()
 }
 
 // NOTE: need free
-const char *l_gmtime()
+char *l_seconds2gmtime(time_t t)
 {
     static const char *weekdays[] = {
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
@@ -173,16 +173,20 @@ const char *l_gmtime()
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     };
-
-    time_t t = time(NULL);
     struct tm *gmt = gmtime(&t);
 
     return l_mprintf("%s, %02d %3s %4d %02d:%02d:%02d GMT",
-        weekdays[gmt->tm_wday],
-        gmt->tm_mday, months[gmt->tm_mon], gmt->tm_year,
-        gmt->tm_hour, gmt->tm_min, gmt->tm_sec);
+                     weekdays[gmt->tm_wday],
+                     gmt->tm_mday, months[gmt->tm_mon], gmt->tm_year,
+                     gmt->tm_hour, gmt->tm_min, gmt->tm_sec);
 }
 
+// NOTE: need free
+char *l_gmtime()
+{
+    time_t t = time(NULL);
+    return l_seconds2gmtime(t);
+}
 
 l_hitem_t *l_hput(l_hitem_t *hashtbl, const char *key, const char *value)
 {
@@ -239,13 +243,34 @@ l_bool_t l_is_file_exist(const char *path)
     return errno != ENOENT;
 }
 
-size_t l_get_filesize(FILE *fp)
+size_t l_get_filesize_by_fp(FILE *fp)
 {
     struct stat s;
     fstat(fileno(fp), &s);
     if (s.st_size == -1)
         l_error("%s: failed", __func__);
     return s.st_size;
+}
+
+size_t l_get_filesize(const char *path)
+{
+    struct stat s;
+    stat(path, &s);
+    if (s.st_size == -1)
+        l_error("%s: failed", __func__);
+    return s.st_size;
+}
+
+time_t l_getmtime_seconds(const char *path)
+{
+    struct stat s;
+    stat(path, &s);
+    return s.st_mtime;
+}
+
+char *l_getmtime(const char *path)
+{
+    return l_seconds2gmtime(l_getmtime_seconds(path));
 }
 
 // NOTE: return value need free
@@ -336,7 +361,7 @@ l_buf_t l_read_file(const char *filepath)
     if (!fp)
         goto RETURN;
 
-    size_t len = l_get_filesize(fp);
+    size_t len = l_get_filesize_by_fp(fp);
     // if is empty file
     if (!len)
         goto RETURN;
@@ -372,4 +397,15 @@ void l_mkdirs(const char *dir)
     mkdir(tmp, S_IRWXU);
 
     L_FREE(tmp);
+}
+
+uint32_t l_adler32(const char *data, size_t len)
+{
+    uint32_t a = 1, b = 0;
+    for (int i = 0; i < len; ++i) {
+        a = (a + (unsigned char)data[i]) % 65521;
+        b = (b + a) % 65521;
+    }
+
+    return (b << 16) | a;
 }

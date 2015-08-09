@@ -13,7 +13,7 @@ int on_request(l_client_t *client)
     const int test_code = 204;
     l_http_response_t test_response = l_create_response();
     l_http_response_t test_redirect = l_create_redirect_response("/");
-    l_http_response_t test_static_file = l_create_response_by_file("test_httputil.c");
+    l_http_response_t test_static_file = l_create_response_by_file(client, "test_httputil.c");
 
     const char *path = l_get_url_path(client);
     assert(!strncmp(path, "/test", 5));
