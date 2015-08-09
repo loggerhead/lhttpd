@@ -63,13 +63,15 @@ class test_httputil(BaseServerTestCase):
         assert get("/test/send_body").text == "test"
         assert get("/test/redirect").status_code == 301
 
-        r = get("/test/static_file")
+        url = "/test/static_file"
+        r = get(url)
         assert r.text == open(self.name + '.c').read()
+
         headers = {
             'If-Modified-Since': r.headers.get('last-modified'),
             'If-None-Match': r.headers.get('eTag'),
         }
-        r = get("/test/static_file", headers=headers)
+        r = get(url, headers=headers)
         assert r.status_code == 304 and len(r.text) == 0
 
 class test_util(BaseTestCase):
