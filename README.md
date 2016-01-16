@@ -3,6 +3,8 @@
 
 Lhttpd is a C library to take care of the detail about TCP and HTTP, and it's API is designed for ease of use, so you can focus on business logic. 
 
+I just find a good alternate--[Mongoose](https://github.com/cesanta/mongoose), which is small, no dependency, cross-platform, and written by pure C. Maybe you should consider use it.
+
 #Features
 * Asynchronous.
 * Lightweight and easy to use.
@@ -88,11 +90,6 @@ see defines in [lhttpd.in.h](https://github.com/loggerhead/lhttpd/blob/master/in
 
 ##Request Routing
 Inspired by the [bottle](http://bottlepy.org/docs/dev/tutorial.html#request-routing).
-
-#TODO
-* [ ] support `multipart/form-data`/`application/x-www-form-urlencoded`/`application/json`，refer to [四种常见的 POST 提交数据方式](https://www.imququ.com/post/four-ways-to-post-data-in-http.html#toc-2) and [Form-based File Upload in HTML](https://www.ietf.org/rfc/rfc1867.txt).
-* [ ] support `Transfer-Encoding`.
-* [ ] support `gzip` compress.
 
 #LICENSE
 MIT
