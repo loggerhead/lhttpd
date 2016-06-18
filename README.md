@@ -1,9 +1,10 @@
+#Abandoned!
+Because I find a good alternate--[Mongoose](https://github.com/cesanta/mongoose), which is small, no dependency, cross-platform, and written by pure C. Maybe you should consider use it.
+
 #Lhttpd
 [![Travis Build Status](https://travis-ci.org/loggerhead/lhttpd.svg)](https://travis-ci.org/loggerhead/lhttpd)
 
-Lhttpd is a C library to take care of the detail about TCP and HTTP, and it's API is designed for ease of use, so you can focus on business logic. 
-
-I just find a good alternate--[Mongoose](https://github.com/cesanta/mongoose), which is small, no dependency, cross-platform, and written by pure C. Maybe you should consider use it.
+Lhttpd is a C library to take care of the detail about TCP and HTTP, and it's API is designed for ease of use, so you can focus on business logic.
 
 #Features
 * Asynchronous.
