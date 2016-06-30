@@ -1,4 +1,4 @@
-#Abandoned!
+#DEPRECATED
 Because I find a good alternate--[Mongoose](https://github.com/cesanta/mongoose), which is small, no dependency, cross-platform, and written by pure C. Maybe you should consider use it.
 
 #Lhttpd
