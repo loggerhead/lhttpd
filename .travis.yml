@@ -1,17 +1,27 @@
 language: c
 sudo: required
-branches:
-  only:
-    - master
+os:
+  - linux
+  - osx
+
 compiler:
   - clang
   - gcc
+    
+branches:
+  only:
+    - master
+    
+cache:
+  - pip
+  
 before_install:
   - if [ $TRAVIS_OS_NAME = linux ]; then
       sudo apt-get update;
     elif [ $TRAVIS_OS_NAME = osx ]; then
       brew update;
     fi
+    
 install:
   - if [ $TRAVIS_OS_NAME = linux ]; then
       git clone https://github.com/libuv/libuv.git && cd libuv;
@@ -28,6 +38,10 @@ install:
       sudo make install;
       cd ..;
     fi
-  - sudo -H pip install grequests
+
+before_script:
+  - pip install --user grequests
+  - export PATH=$HOME/.local/bin:$HOME/Library/Python/2.7/bin/:$PATH
+  
 script:
   - ./install.sh && ./install.sh test
