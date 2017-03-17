@@ -1,12 +1,15 @@
-#DEPRECATED
+# DEPRECATED
+
 Because I find a good alternate--[Mongoose](https://github.com/cesanta/mongoose), which is small, no dependency, cross-platform, and written by pure C. Maybe you should consider use it.
 
-#Lhttpd
+# Lhttpd
+
 [![Travis Build Status](https://travis-ci.org/loggerhead/lhttpd.svg)](https://travis-ci.org/loggerhead/lhttpd)
 
 Lhttpd is a C library to take care of the detail about TCP and HTTP, and it's API is designed for ease of use, so you can focus on business logic.
 
-#Features
+# Features
+
 * Asynchronous.
 * Lightweight and easy to use.
 * Provide TCP support and some webserver functionality.
@@ -16,8 +19,9 @@ Lhttpd is a C library to take care of the detail about TCP and HTTP, and it's AP
 * SQLite3 support.
 * __NOT thread-safe__.
 
-#Build and Install
-##Install
+# Build and Install
+## Install
+
 ```shell
 # compile, generate `liblhttpd.xxx` and `lhttpd.h`, and move they to `/usr/local/lib` and `/usr/local/include`
 ./install.sh
@@ -31,7 +35,8 @@ echo "/usr/local/lib" >> /etc/ld.so.conf
 ldconfig
 ```
 
-##Dependency
+## Dependency
+
 You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/make/) for build, and below libraries for compile.
 
 * Required: [libuv](https://github.com/libuv/libuv).
@@ -41,7 +46,8 @@ You need [cmake](http://www.cmake.org/) and [make](http://www.gnu.org/software/m
 * Optional: [grequests](https://github.com/kennethreitz/grequests) for test.
 * Optional: [valgrind](http://valgrind.org/) for memory leak check and [siege](https://www.joedog.org/siege-home/) for pressure test.
 
-###Required
+### Required
+
 ```shell
 # cmake and make
 sudo apt-get install cmake make
@@ -55,7 +61,8 @@ make check
 sudo make install
 ```
 
-###Optional
+### Optional
+
 ```shell
 # json-c
 sudo apt-get install libjson0 libjson0-dev
@@ -72,13 +79,15 @@ sudo make install
 sudo pip install grequests
 ```
 
-####If install hiredis error
+#### If install hiredis error
+
 modify `adapters/libuv.h` as follow and try again:
 
 1. add `#include <stdlib.h>` to first line.
 2. find `static int redisLibuvAttach(redisAsyncContext* ac, uv_loop_t* loop)` and delete `static`.
 
-#Usage
+# Usage
+
 see [examples](https://github.com/loggerhead/lhttpd/tree/master/examples) or [test](https://github.com/loggerhead/lhttpd/tree/master/test) for details.
 
 ```shell
@@ -86,11 +95,14 @@ see [examples](https://github.com/loggerhead/lhttpd/tree/master/examples) or [te
 ./install.sh test
 ```
 
-##API
+## API
+
 see defines in [lhttpd.in.h](https://github.com/loggerhead/lhttpd/blob/master/include/lhttpd.in.h).
 
-##Request Routing
+## Request Routing
+
 Inspired by the [bottle](http://bottlepy.org/docs/dev/tutorial.html#request-routing).
 
-#LICENSE
+# LICENSE
+
 MIT
